@@ -1,5 +1,5 @@
-import redirector from './redirector'
-import renderer from './renderer'
+import redirector from './redirector';
+import renderer from './renderer';
 
 export default [
   redirector,

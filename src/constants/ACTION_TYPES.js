@@ -1,4 +1,4 @@
-import defineActionTypes from '../utils/defineActionTypes'
+import defineActionTypes from '../utils/defineActionTypes';
 
 export default defineActionTypes({
   /*

@@ -1,12 +1,11 @@
-import * as navigation from '../actions/navigation'
-import ROUTES from '../constants/ROUTES'
+import * as navigation from '../actions/navigation';
+import ROUTES from '../constants/ROUTES';
 
 
 export default function redirector(state, dispatch) {
-  const {name, options} = state.navigation.location || {}
-  const currentURI = window.location.hash.substr(1)
-  const canonicalURI = name && ROUTES.generate(name, options)
-
+  const {name, options} = state.navigation.location || {};
+  const currentURI = window.location.hash.substr(1);
+  const canonicalURI = name && ROUTES.generate(name, options);
   if (canonicalURI && canonicalURI !== currentURI) {
     // If the URL entered includes extra `/` characters, or otherwise
     // differs from the canonical URL, navigate the user to the

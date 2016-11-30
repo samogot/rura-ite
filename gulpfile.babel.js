@@ -1,13 +1,12 @@
-import del from "del";
-import path from "path";
-import gulp from "gulp";
-import open from "open";
-import gulpLoadPlugins from "gulp-load-plugins";
-import packageJson from "./package.json";
-import runSequence from "run-sequence";
-import webpack from "webpack";
-import webpackConfig from "./webpack.config";
-import WebpackDevServer from "webpack-dev-server";
+import del from 'del';
+import gulp from 'gulp';
+import open from 'open';
+import gulpLoadPlugins from 'gulp-load-plugins';
+import packageJson from './package.json';
+import runSequence from 'run-sequence';
+import webpack from 'webpack';
+import webpackConfig from './webpack.config';
+import WebpackDevServer from 'webpack-dev-server';
 
 
 const PORT = process.env.PORT || 3000;
@@ -25,7 +24,7 @@ gulp.task('serve:clean', cb => del('build', {dot: true}, cb));
 gulp.task('dist:clean', cb => del(['dist', 'dist-intermediate'], {dot: true}, cb));
 
 // Copy static files across to our final directory
-gulp.task('serve:static', () => 
+gulp.task('serve:static', () =>
   gulp.src([
     'src/static/**'
   ])
@@ -34,7 +33,7 @@ gulp.task('serve:static', () =>
     .pipe($.size({title: 'static'}))
 );
 
-gulp.task('dist:static', () => 
+gulp.task('dist:static', () =>
   gulp.src([
     'src/static/**'
   ])
@@ -53,7 +52,7 @@ gulp.task('serve:index', () => {
 // Copy our index file and inject css/script imports for this build
 gulp.task('dist:index', () => {
   const app = gulp
-    .src(["*.{css,js}"], {cwd: 'dist-intermediate/generated'})
+    .src(["*.{css,js,map}"], {cwd: 'dist-intermediate/generated'})
     .pipe(gulp.dest('dist'));
 
   // Build the index.html using the names of compiled files

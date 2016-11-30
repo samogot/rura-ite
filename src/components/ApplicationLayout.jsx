@@ -1,8 +1,7 @@
-import './ApplicationLayout.less'
-
-import React, {PropTypes} from 'react'
-import { pacomoTransformer } from '../utils/pacomo'
-import Link from './Link'
+import './ApplicationLayout.styl';
+import React, {PropTypes} from 'react';
+import {pacomoTransformer} from '../utils/pacomo';
+import Link from './Link';
 
 
 const ApplicationLayout = ({
@@ -24,11 +23,11 @@ const ApplicationLayout = ({
     <main className='content'>
       {children}
     </main>
-  </div>
+  </div>;
 
 ApplicationLayout.propTypes = {
   children: PropTypes.element.isRequired,
   locationName: PropTypes.string,
-}
+};
 
 export default pacomoTransformer(ApplicationLayout)

@@ -1,10 +1,10 @@
-import { withPackageName } from 'react-pacomo'
+import {withPackageName} from 'react-pacomo';
 
 
 const {
   decorator: pacomoDecorator,
   transformer: pacomoTransformer,
-} = withPackageName('app')
+} = withPackageName('app');
 
 
-export {pacomoTransformer, pacomoDecorator}
+export {pacomoTransformer, pacomoDecorator};

@@ -77,18 +77,18 @@ There is one important exception to this rule: actors will not be called if `mai
 The code which accomplishes this is very small:
 
 ```javascript
-let acting = false
+let acting = false;
 store.subscribe(function() {
   // Ensure that any action dispatched by actors do not result in a new
   // actor run, allowing actors to dispatch with impunity.
   if (!acting) {
-    acting = true
+    acting = true;
 
     for (let actor of actors) {
       actor(store.getState(), store.dispatch.bind(store))
     }
 
-    acting = false
+    acting = false;
   }
 })
 ```

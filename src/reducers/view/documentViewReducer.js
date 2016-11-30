@@ -1,22 +1,20 @@
-import pick from 'object-pick'
-import typeReducers from '../../utils/typeReducers'
-import compact from '../../utils/compact'
-import ACTION_TYPES from '../../constants/ACTION_TYPES'
+import pick from 'object-pick';
+import typeReducers from '../../utils/typeReducers';
+import compact from '../../utils/compact';
+import ACTION_TYPES from '../../constants/ACTION_TYPES';
 
 
 const defaultState = {
   unsavedChanges: {},
   saveErrors: {},
-}
-
-
+};
 export default typeReducers(ACTION_TYPES.DOCUMENT_VIEW, defaultState, {
   // Update the current document data
   UPDATE_DATA: (state, {id, data}) => ({
     ...state,
     unsavedChanges: {
       ...state.unsavedChanges,
-      [id]: { ...state.unsavedChanges[id], ...data },
+      [id]: {...state.unsavedChanges[id], ...data},
     },
   }),
 

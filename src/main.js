@@ -1,6 +1,7 @@
 import {createStore, applyMiddleware} from 'redux';
 import reduxThunk from 'redux-thunk';
 import reduxMulti from 'redux-multi';
+import createLogger from 'redux-logger';
 import React from 'react';
 import ReactDOM from 'react-dom';
 import {Provider} from 'react-redux';
@@ -10,9 +11,12 @@ import rootReducer from './reducers';
 import Application from './Application';
 import 'golden-layout/src/css/goldenlayout-base.css';
 import 'golden-layout/src/css/goldenlayout-light-theme.css';
-import createLogger from 'redux-logger';
+import * as layoutViewActions from './actions/layoutView';
+import * as textsDataActions from './actions/textsData';
+import * as chaptersDataActions from './actions/chaptersData';
+import lorem from 'lorem-ipsum';
 
-const reduxLog = createLogger();
+const reduxLog = createLogger({collapsed: true});
 
 // Add middleware to allow our action creators to return functions and arrays
 const createStoreWithMiddleware = applyMiddleware(
@@ -46,6 +50,53 @@ store.subscribe(function () {
   }
 });
 
+
+if (!preloadedState) {
+  store.dispatch(textsDataActions.addText({
+    id: 1,
+    wiki: lorem({count: 20, units: 'paragraphs'})
+  }));
+  store.dispatch(textsDataActions.addText({
+    id: 2,
+    wiki: lorem({count: 20, units: 'paragraphs'})
+  }));
+  store.dispatch(textsDataActions.addText({
+    id: 3,
+    wiki: lorem({count: 20, units: 'paragraphs'})
+  }));
+  store.dispatch(chaptersDataActions.addChapter({
+    id: 1,
+    text: 1,
+    langs: {
+      en: 3,
+      jp: 2
+    }
+  }));
+  store.dispatch(chaptersDataActions.selectActiveChapter(1));
+  store.dispatch(layoutViewActions.saveLayout({
+    content: [{
+      type: 'row',
+      content: [
+        {
+          title: 'English',
+          type: 'react-component',
+          component: 'text-orig-component',
+          id: 'orig-text-en',
+          props: {lang: 'en'}
+        },
+        {
+          title: 'Chapter 1',
+          type: 'react-component',
+          component: 'text-main-component',
+          id: 'main-text-1',
+          props: {chapter: 1}
+        }
+      ]
+    }]
+  }));
+}
+
+
 const APP_NODE = document.getElementById('react-app');
 ReactDOM.render(
   <Provider store={store}>
@@ -53,7 +104,7 @@ ReactDOM.render(
   </Provider>,
   APP_NODE
 );
-//
+
 // var config = {
 //   content: [{
 //     type: 'row',
@@ -70,7 +121,7 @@ ReactDOM.render(
 //       }
 //     ]
 //   }]
-// };
+// } ;
 //
 //
 // let myLayout = new GoldenLayout( config ,document.getElementById('react-app'));

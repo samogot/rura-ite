@@ -4,21 +4,7 @@ import ACTION_TYPES from '../../constants/ACTION_TYPES';
 
 const defaultState = {
   config: {
-    content: [{
-      type: 'row',
-      content: [
-        {
-          title: 'A react component',
-          type: 'react-component',
-          component: 'redux-component'
-        },
-        {
-          title: 'Another react component',
-          type: 'react-component',
-          component: 'redux-component'
-        }
-      ]
-    }]
+    content: []
   },
   actions: []
 };

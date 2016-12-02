@@ -2,6 +2,8 @@ import './GoldenLayout.styl';
 import React, {PropTypes} from 'react';
 import {pacomoDecorator} from '../utils/pacomo';
 import GoldenLayoutItemComponentReduxWrapper from './GoldenLayoutItemComponentReduxWrapper';
+import MainTextContainer from '../containers/MainTextContainer';
+import OrigTextContainer from '../containers/OrigTextContainer';
 import TestItem from './TestItem';
 import GoldenLayoutLib from 'golden-layout';
 import {connect} from 'react-redux';
@@ -16,42 +18,27 @@ class GoldenLayout extends React.Component {
     this.disconnectFakeStore = () => {};
     this.unsubscribeChanges = () => {};
     this.changeListnerTimeout = false;
+    this.onResize = this.onResize.bind(this)
   }
 
   componentDidMount() {
     this.gl = new GoldenLayoutLib(this.props.config, this.refs.container);
     this.gl.registerComponent('redux-component', GoldenLayoutItemComponentReduxWrapper(TestItem));
+    this.gl.registerComponent('text-main-component', GoldenLayoutItemComponentReduxWrapper(MainTextContainer));
+    this.gl.registerComponent('text-orig-component', GoldenLayoutItemComponentReduxWrapper(OrigTextContainer));
     if (!this.gl.isSubWindow) {
       this.connectFakeStore();
       this.subscribeChanges();
+      window.addEventListener('resize', this.onResize);
     }
     this.gl.init();
-  }
 
-  subscribeChanges() {
-    let alreadySaving = false;
-    const changeListner = () => {
-      if (!this.changeListnerTimeout) {
-        clearTimeout(this.changeListnerTimeout);
-        this.changeListnerTimeout = false;
-      }
-      if (!alreadySaving && this.gl.isInitialised && this.gl.openPopouts.every((w) => w.isInitialised)) {
-        alreadySaving = true;
-        this.props.saveLayout(this.gl.toConfig());
-        alreadySaving = false;
-      }
-      else {
-        this.changeListnerTimeout = setTimeout(changeListner, 10);
-      }
-    };
-
-    this.gl.on('stateChanged', changeListner);
-    this.unsubscribeChanges = () => this.gl.off('stateChanged', changeListner);
   }
 
   componentWillUnmount() {
-    this.disconnectFakeStore();
+    window.removeEventListener('resize', this.onResize);
     this.unsubscribeChanges();
+    this.disconnectFakeStore();
     this.gl.destroy();
   }
 
@@ -75,10 +62,38 @@ class GoldenLayout extends React.Component {
     };
   }
 
+  subscribeChanges() {
+    // let alreadySaving = false;
+    // const saveState = () => {
+    //   if (!alreadySaving && this.gl.isInitialised && this.gl.openPopouts.every((w) => w.isInitialised)) {
+    //     alreadySaving = true;
+    //     this.props.saveLayout(this.gl.toConfig());
+    //     alreadySaving = false;
+    //   }
+    //   else {
+    //     this.changeListnerTimeout = setTimeout(changeListner, 10);
+    //   }
+    // };
+
+    const changeListner = () => {
+      if (this.changeListnerTimeout) {
+        clearTimeout(this.changeListnerTimeout);
+        this.changeListnerTimeout = false;
+      }
+      this.changeListnerTimeout = setTimeout(() => this.props.saveLayout(this.gl.toConfig()), 1000);
+    };
+
+    this.gl.on('stateChanged', changeListner);
+    this.unsubscribeChanges = () => this.gl.off('stateChanged', changeListner);
+  }
+
+  onResize() {
+    this.gl.updateSize();
+  }
+
   shouldComponentUpdate(nextProps) {
     return nextProps.actions && nextProps.actions != this.props.actions;
   }
-
 
   render() {
     return <div ref="container"/>;

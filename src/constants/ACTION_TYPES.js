@@ -15,9 +15,14 @@ export default defineActionTypes({
 
   TEXTS_DATA: `
     UPDATE
+    ADD
+    REMOVE
   `,
 
   CHAPTERS_DATA: `
     UPDATE
+    ADD
+    REMOVE
+    SELECT_ACTIVE
   `,
 })

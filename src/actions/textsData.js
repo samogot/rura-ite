@@ -8,3 +8,11 @@ export function saveText(text) {
     data: {text},
   }
 }
+
+export function addText(data) {
+  return {
+    type: T.TEXTS_DATA.ADD,
+    id: data.id,
+    data,
+  }
+}

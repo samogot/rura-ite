@@ -1,17 +1,15 @@
 import React, {PropTypes} from 'react';
-// import GoldenLayout from './components/GoldenLayout';
 import GoldenLayoutContainer from './containers/GoldenLayoutContainer';
+import HeaderContainer from './containers/HeaderContainer';
+import FooterContainer from './containers/FooterContainer';
 
 
-// const App = () => (
-//   <div>
-//     <Header />
-//     <GoldenLayout />
-//     <Footer />
-//   </div>
-// );
 const App = ({store}) => (
-  <GoldenLayoutContainer store={store}/>
+  <div>
+          <HeaderContainer />
+          <GoldenLayoutContainer store={store}/>
+          <FooterContainer />
+  </div>
 );
 
 export default App

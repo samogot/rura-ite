@@ -1,13 +1,26 @@
 import typeReducers from '../../utils/typeReducers';
+import delegateReducerById from '../../utils/delegateReducerById';
 import ACTION_TYPES from '../../constants/ACTION_TYPES';
 
 
-const defaultState = {'0': {text: ''}};
+const defaultItem = {
+  id: 0,
+  wiki: ''
+};
 
+const oneItemReducer = typeReducers(ACTION_TYPES.TEXTS_DATA, defaultItem, {
+  UPDATE: (state, {data}) => ({
+    ...state,
+    ...data,
+  }),
+  ADD: (state, {data}) => (data),
+  REMOVE: () => null
+});
+
+const defaultState = {};
 
 export default typeReducers(ACTION_TYPES.TEXTS_DATA, defaultState, {
-  UPDATE: (state, {id, data}) => ({
-    ...state,
-    [id]: {...state[id], ...data},
-  })
-})
+  UPDATE: delegateReducerById(oneItemReducer),
+  ADD: delegateReducerById(oneItemReducer),
+  REMOVE: delegateReducerById(oneItemReducer),
+});

@@ -5,32 +5,19 @@ export default defineActionTypes({
    * View model
    */
 
-  DOCUMENT_LIST_VIEW: `
-    SET_QUERY
+  LAYOUT_VIEW: `
+    SAVE_LAYOUT
   `,
-
-  DOCUMENT_VIEW: `
-    UPDATE_DATA
-    SET_ERRORS
-    REMOVE_STALE_ERRORS
-    CLEAR
-  `,
-
 
   /*
    * Data model
    */
 
-  DOCUMENT_DATA: `
+  TEXTS_DATA: `
     UPDATE
   `,
 
-  /*
-   * Application
-   */
-
-  NAVIGATION: `
-    START
-    COMPLETE
+  CHAPTERS_DATA: `
+    UPDATE
   `,
 })

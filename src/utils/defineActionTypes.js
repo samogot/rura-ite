@@ -23,7 +23,7 @@ export default function defineActionTypes(obj) {
         "Types must start with a capital letter, and be composed entirely of capital letters, numbers, and the underscore character."
       );
 
-      namespaceTypes[type] = `@@app/${namespace}/${type}`;
+      namespaceTypes[type] = `@@ite/${namespace}/${type}`;
     }
 
     result[namespace] = namespaceTypes;

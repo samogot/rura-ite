@@ -1,17 +1,15 @@
 import {combineReducers} from 'redux';
-import navigation from './navigationReducer';
-import documentListView from './view/documentListViewReducer';
-import documentView from './view/documentViewReducer';
-import documentData from './data/documentDataReducer';
+import layoutView from './view/layoutViewReducer';
+import textsData from './data/textsDataReducer';
+import chaptersData from './data/chaptersDataReducer';
 
 
 export default combineReducers({
-  navigation,
   view: combineReducers({
-    documentList: documentListView,
-    document: documentView,
+    layout: layoutView,
   }),
   data: combineReducers({
-    document: documentData,
+    texts: textsData,
+    chapters: chaptersData,
   }),
 })

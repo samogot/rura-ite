@@ -37,7 +37,7 @@ export default (DEBUG, PATH, PORT = 3000) => ({
         loader: "babel-loader",
         query: {
           plugins: ['transform-runtime'],
-          presets: ['latest', 'stage-3', 'react'],
+          presets: ['latest', 'stage-0', 'react'],
         }
       },
 
@@ -47,6 +47,12 @@ export default (DEBUG, PATH, PORT = 3000) => ({
         loader: DEBUG
           ? "style!css!autoprefixer!stylus"
           : ExtractTextPlugin.extract("style-loader", "css-loader!autoprefixer-loader!stylus-loader")
+      },
+      {
+        test: /\.css$/,
+        loader: DEBUG
+          ? "style!css!autoprefixer"
+          : ExtractTextPlugin.extract("style-loader", "css-loader!autoprefixer-loader")
       },
 
       // Load images
@@ -64,18 +70,24 @@ export default (DEBUG, PATH, PORT = 3000) => ({
     ]
   },
 
-  plugins: DEBUG
-    ? [new webpack.HotModuleReplacementPlugin()]
-    : [
-    new webpack.DefinePlugin({'process.env.NODE_ENV': '"production"'}),
-    new ExtractTextPlugin("style.css", {allChunks: false}),
-    new webpack.optimize.DedupePlugin(),
-    new webpack.optimize.UglifyJsPlugin({
-      compressor: {screw_ie8: true, keep_fnames: true, warnings: false},
-      mangle: {screw_ie8: true, keep_fnames: true}
+  plugins: [
+    new webpack.ProvidePlugin({
+      React: "react",
+      ReactDOM: "react-dom"
     }),
-    new webpack.optimize.OccurenceOrderPlugin(),
-    new webpack.optimize.AggressiveMergingPlugin(),
+    ...(DEBUG
+      ? [new webpack.HotModuleReplacementPlugin()]
+      : [
+      new webpack.DefinePlugin({'process.env.NODE_ENV': '"production"'}),
+      new ExtractTextPlugin("style.css", {allChunks: false}),
+      new webpack.optimize.DedupePlugin(),
+      new webpack.optimize.UglifyJsPlugin({
+        compressor: {screw_ie8: true, keep_fnames: true, warnings: false},
+        mangle: {screw_ie8: true, keep_fnames: true}
+      }),
+      new webpack.optimize.OccurenceOrderPlugin(),
+      new webpack.optimize.AggressiveMergingPlugin(),
+    ])
   ],
 
   resolveLoader: {

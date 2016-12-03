@@ -8,10 +8,3 @@ export function addChapter(data) {
     data,
   }
 }
-
-export function selectActiveChapter(id) {
-  return {
-    type: T.CHAPTERS_DATA.SELECT_ACTIVE,
-    id: id
-  }
-}

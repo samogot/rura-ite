@@ -5,7 +5,8 @@ import CodeMirrorTextFrame from '../components/CodeMirrorTextFrame';
 
 function mapStateToProps(state, ownProps) {
   return {
-    text: state.data.texts[state.data.chapters[state.data.chapters.activeChapter].langs[ownProps.lang]].wiki,
+    text: state.data.texts[state.data.chapters[state.view.texts.activeChapter].langs[ownProps.lang]].wiki,
+    glContainer: ownProps.glContainer,
   };
 }
 

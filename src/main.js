@@ -14,6 +14,7 @@ import 'golden-layout/src/css/goldenlayout-light-theme.css';
 import * as layoutViewActions from './actions/layoutView';
 import * as textsDataActions from './actions/textsData';
 import * as chaptersDataActions from './actions/chaptersData';
+import * as textsViewActions from './actions/textsView';
 import lorem from 'lorem-ipsum';
 
 const reduxLog = createLogger({collapsed: true});
@@ -52,27 +53,23 @@ store.subscribe(function () {
 
 
 if (!preloadedState) {
-  store.dispatch(textsDataActions.addText({
-    id: 1,
-    wiki: lorem({count: 20, units: 'paragraphs'})
-  }));
-  store.dispatch(textsDataActions.addText({
-    id: 2,
-    wiki: lorem({count: 20, units: 'paragraphs'})
-  }));
-  store.dispatch(textsDataActions.addText({
-    id: 3,
-    wiki: lorem({count: 20, units: 'paragraphs'})
-  }));
-  store.dispatch(chaptersDataActions.addChapter({
-    id: 1,
-    text: 1,
-    langs: {
-      en: 3,
-      jp: 2
-    }
-  }));
-  store.dispatch(chaptersDataActions.selectActiveChapter(1));
+  for (let i = 1; i < 7; ++i) {
+    store.dispatch(textsDataActions.addText({
+      id: i,
+      wiki: lorem({count: 20, units: 'paragraphs'}).replace(/\n\n/g, '\n')
+    }));
+  }
+  for (let i = 1; i < 3; ++i) {
+    store.dispatch(chaptersDataActions.addChapter({
+      id: i,
+      text: 1 + (i - 1) * 3,
+      langs: {
+        jp: 2 + (i - 1) * 3,
+        en: 3 + (i - 1) * 3,
+      }
+    }));
+  }
+  store.dispatch(textsViewActions.selectActiveChapter(1));
   store.dispatch(layoutViewActions.saveLayout({
     content: [{
       type: 'row',
@@ -85,11 +82,29 @@ if (!preloadedState) {
           props: {lang: 'en'}
         },
         {
-          title: 'Chapter 1',
+          title: 'Japan',
           type: 'react-component',
-          component: 'text-main-component',
-          id: 'main-text-1',
-          props: {chapter: 1}
+          component: 'text-orig-component',
+          id: 'orig-text-jp',
+          props: {lang: 'jp'}
+        }, {
+          type: 'stack',
+          content: [
+            {
+              title: 'Chapter 1',
+              type: 'react-component',
+              component: 'text-main-component',
+              id: 'main-text-1',
+              props: {chapter: 1}
+            },
+            {
+              title: 'Chapter 2',
+              type: 'react-component',
+              component: 'text-main-component',
+              id: 'main-text-2',
+              props: {chapter: 2}
+            },
+          ]
         }
       ]
     }]

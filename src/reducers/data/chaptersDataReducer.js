@@ -18,15 +18,10 @@ const oneItemReducer = typeReducers(ACTION_TYPES.CHAPTERS_DATA, defaultItem, {
 });
 
 const defaultState = {
-  activeChapter: 0
 };
 
 export default typeReducers(ACTION_TYPES.CHAPTERS_DATA, defaultState, {
   UPDATE: delegateReducerById(oneItemReducer),
   ADD: delegateReducerById(oneItemReducer),
   REMOVE: delegateReducerById(oneItemReducer),
-  SELECT_ACTIVE: (state, {id}) => ({
-    ...state,
-    activeChapter: id,
-  }),
 });

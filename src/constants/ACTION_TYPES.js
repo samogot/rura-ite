@@ -9,6 +9,14 @@ export default defineActionTypes({
     SAVE_LAYOUT
   `,
 
+  TEXTS_VIEW: `
+    SELECT_CHAPTER
+    SYNC_SCROLL
+    SET_SCROLL
+    UPDATE_LINES_HEIGHTS
+    UPDATE_OFFSETS
+  `,
+
   /*
    * Data model
    */
@@ -23,6 +31,5 @@ export default defineActionTypes({
     UPDATE
     ADD
     REMOVE
-    SELECT_ACTIVE
   `,
 })

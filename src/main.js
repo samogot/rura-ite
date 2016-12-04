@@ -56,7 +56,7 @@ if (!preloadedState) {
   for (let i = 1; i < 7; ++i) {
     store.dispatch(textsDataActions.addText({
       id: i,
-      wiki: lorem({count: 20, units: 'paragraphs'}).replace(/\n\n/g, '\n')
+      wiki: lorem({count: 20 + i, units: 'paragraphs'}).replace(/\n\n/g, '\n')
     }));
   }
   for (let i = 1; i < 3; ++i) {
@@ -110,6 +110,7 @@ if (!preloadedState) {
     }]
   }));
 }
+window.store = store
 
 
 const APP_NODE = document.getElementById('react-app');

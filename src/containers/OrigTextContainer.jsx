@@ -12,7 +12,10 @@ function mapStateToProps(state, ownProps) {
 }
 
 function mapDispatchToProps(dispatch, ownProps) {
-  return commons.mapDispatchToProps(dispatch, ownProps);
+  return {
+    ...commons.mapDispatchToProps(dispatch, ownProps),
+    onFocus: () => {},
+  }
 }
 
 export default connect(mapStateToProps, mapDispatchToProps)(CodeMirrorTextFrame);

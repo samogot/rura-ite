@@ -8,30 +8,48 @@ export function selectActiveChapter(id) {
   }
 }
 
-export function updateLinesHeights(id, heights) {
+export function selectActiveChapterWithDelay(id) {
+  return dispatch => setTimeout(() => dispatch(selectActiveChapter(id)), 0)
+}
+
+export function updateLinesHeights(id, heights, fullHeight) {
   return {
     type: T.TEXTS_VIEW.UPDATE_LINES_HEIGHTS,
     id,
     heights,
+    fullHeight,
+  }
+}
+export function updateFullHeight(id, fullHeight) {
+  return {
+    type: T.TEXTS_VIEW.UPDATE_FULL_HEIGHT,
+    id,
+    fullHeight,
   }
 }
 
 
-export function syncScroll(sourceId, scrollInfo, viewport, scrollAt) {
+export function syncScroll(id, scrollTop, targets) {
   return {
     type: T.TEXTS_VIEW.SYNC_SCROLL,
-    sourceId,
-    scrollInfo,
-    viewport,
-    scrollAt
+    id,
+    scrollTop,
+    targets
   }
 }
 
-export function setScroll(id, sourceId, scrollTop, scrollAt) {
+export function updateClientHeight(id, clientHeight) {
   return {
-    type: T.TEXTS_VIEW.SET_SCROLL,
-    id, sourceId,
-    scrollTop: Math.round(scrollTop),
-    scrollAt,
+    type: T.TEXTS_VIEW.UPDATE_CLIENT_HEIGHT,
+    id,
+    clientHeight,
+  }
+}
+
+export function updateViewport(id, from, to) {
+  return {
+    type: T.TEXTS_VIEW.UPDATE_VIEWPORT,
+    id,
+    viewport: {from, to},
   }
 }

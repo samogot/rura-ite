@@ -1,77 +1,32 @@
-import CodeMirror from 'react-codemirror';
+import CodeMirror from 'codemirror';
 import 'codemirror/lib/codemirror.css';
 import './CodeMirrorTextFrame.styl';
 import {pacomoDecorator} from '../utils/pacomo';
+const throttle = require('lodash.throttle');
+const debounce = require('lodash.debounce');
 
-// const CodeMirrorTextFrame = ({text}) =>
+function normalizeLineEndings(str) {
+  if (!str) return str;
+  return str.replace(/\r\n|\r/g, '\n');
+}
+
 class CodeMirrorTextFrame extends React.Component {
 
   constructor(props, context) {
     super(props, context);
     this.refreshCM = this.refreshCM.bind(this);
-    this.updateLinesHeights = this.updateLinesHeights.bind(this);
-    this.onScroll = this.onScroll.bind(this);
     this.onFocus = this.onFocus.bind(this);
+    this.onShow = this.onShow.bind(this);
+    this.onChange = this.onChange.bind(this);
+    this.onHeightChange = debounce(this.onHeightChange.bind(this), 200);
+    this.onScroll = throttle(this.onScroll.bind(this), 16);
+    this.onResize = this.onResize.bind(this);
+    this.onViewportChange = this.onViewportChange.bind(this);
     this.lastScrollSet = 0;
+    this.lastTextSet = 0;
   }
 
   componentDidMount() {
-    this.props.glContainer.on('open', this.refreshCM);
-    this.props.glContainer.on('show', this.refreshCM);
-    if (this.props.onFocus) {
-      this.props.glContainer.on('show', this.onFocus);
-      this.refs.editor.codeMirror.on('focus', this.onFocus);
-    }
-    this.refs.editor.codeMirror.on("change", this.updateLinesHeights);
-    // this.refs.editor.codeMirror.on("swapDoc", updateLinesHeights);
-    // this.refs.editor.codeMirror.on("markerAdded", updateLinesHeights);
-    // this.refs.editor.codeMirror.on("markerCleared", updateLinesHeights);
-    this.refs.editor.codeMirror.on("scroll", this.onScroll);
-    this.updateLinesHeights();
-  }
-
-  componentWillUnmount() {
-    this.props.glContainer.off('open', this.refreshCM);
-    this.props.glContainer.off('show', this.refreshCM);
-    if (this.props.onFocus) {
-      this.props.glContainer.off('show', this.onFocus);
-      this.refs.editor.codeMirror.off('focus', this.onFocus);
-    }
-    this.refs.editor.codeMirror.off("change", this.updateLinesHeights);
-    this.refs.editor.codeMirror.off("scroll", this.onScroll);
-  }
-
-  updateLinesHeights() {
-    const heights = [];
-    this.refs.editor.codeMirror.eachLine(line => {
-      heights.push(this.refs.editor.codeMirror.heightAtLine(line, 'local'));
-    });
-    heights.push(this.refs.editor.codeMirror.getDoc().height);
-    this.props.updateLinesHeights(this.props.textId, heights);
-  }
-
-  onFocus() {
-    this.props.onFocus();
-    const now = +new Date;
-    const viewport = this.refs.editor.codeMirror.getViewport();
-    const sInfo = this.refs.editor.codeMirror.getScrollInfo();
-    this.props.syncScroll(this.props.textId, sInfo, viewport, now);
-  }
-
-  onScroll() {
-    const now = +new Date;
-    if (this.lastScrollSet + 50 > now) return false;
-    const viewport = this.refs.editor.codeMirror.getViewport();
-    const sInfo = this.refs.editor.codeMirror.getScrollInfo();
-    this.props.setScroll(this.props.textId, this.props.textId, sInfo.top, now);
-    this.props.syncScroll(this.props.textId, sInfo, viewport, now);
-  }
-
-  refreshCM() {
-    setTimeout(() => this.refs.editor.codeMirror.refresh(), 0);
-  }
-
-  render() {
     const options = {
       lineNumbers: true,
       matchBrackets: true,
@@ -83,53 +38,106 @@ class CodeMirrorTextFrame extends React.Component {
       // mwextFunctionSynonyms: mwextFunctionSynonymsVAL,
       // mode: "mediawiki",
     };
-    return <CodeMirror value={this.props.text} options={options} ref="editor"/>
+
+    this.cm = CodeMirror.fromTextArea(this.refs.textarea, options);
+    this.props.glContainer.on('open', this.refreshCM);
+    this.props.glContainer.on('show', this.refreshCM);
+    this.props.glContainer.on('show', this.onShow);
+    this.props.glContainer.on('resize', this.onResize);
+    this.cm.on('focus', this.onFocus);
+    this.cm.on("change", this.onChange);
+    this.cm.on("change", this.onHeightChange);
+    this.cm.on("scroll", this.onScroll);
+    this.cm.on("viewportChange", this.onViewportChange);
+    this.componentDidUpdate({scrollTop: 0, text: ''});
+    if (!this.props.glContainer.isHidden && this.props.chapter.text == this.props.textId) {
+      window.cm = this.cm;
+    }
   }
 
-  componentDidUpdate(prevProps) {
-    // console.log(this.props);
-    if (this.props.scrollSync.scrollAt != prevProps.scrollSync.scrollAt
-        && this.props.scrollSync.sourceId != this.props.textId
-        && (this.props.chapter.text == this.props.scrollSync.sourceId
-            || Object.entries(this.props.chapter.langs).some(([,text]) => text == this.props.scrollSync.sourceId))) {
-      const {sourceId, scrollInfo, viewport, scrollAt, sourceHeights, destHeights} = this.props.scrollSync;
-      const halfScreen = .5 * scrollInfo.clientHeight,
-        midY = scrollInfo.top + halfScreen;
-      let midLine = 0;
-      for (let i = viewport.from; i < viewport.to; ++i) {
-        if (midY < sourceHeights[i]) {
-          midLine = i - 1;
-          break;
-        }
-      }
-      const sourceOffset = {top: sourceHeights[midLine], bot: sourceHeights[midLine + 1]};
-      const destMax = destHeights[destHeights.length - 1];
-      const destOffset = {top: destHeights[midLine] || destMax, bot: destHeights[midLine + 1] || destMax};
-      const ratio = (midY - sourceOffset.top) / (sourceOffset.bot - sourceOffset.top);
-      const destScrollInfo = this.refs.editor.codeMirror.getScrollInfo();
-      let targetPos = (destOffset.top - .5 * destScrollInfo.clientHeight) + ratio * (destOffset.bot - destOffset.top);
+  componentWillUnmount() {
+    this.props.glContainer.off('open', this.refreshCM);
+    this.props.glContainer.off('show', this.refreshCM);
+    this.props.glContainer.off('show', this.onShow);
+    this.props.glContainer.off('resize', this.onResize);
+    this.cm.off('focus', this.onFocus);
+    this.cm.off("change", this.onChange);
+    this.cm.off("change", this.onHeightChange);
+    this.cm.off("scroll", this.onScroll);
+    this.cm.toTextArea();
+  }
 
-      let botDist, mix;
-      // Some careful tweaking to make sure no space is left out of view
-      // when scrolling to top or bottom.
-      if (targetPos > scrollInfo.top && (mix = scrollInfo.top / halfScreen) < 1) {
-        targetPos = targetPos * mix + scrollInfo.top * (1 - mix);
-      }
-      else if ((botDist = scrollInfo.height - scrollInfo.clientHeight - scrollInfo.top) < halfScreen) {
-        const botDistOther = destScrollInfo.height - destScrollInfo.clientHeight - targetPos;
-        if (botDistOther > botDist && (mix = botDist / halfScreen) < 1) {
-          targetPos = targetPos * mix + (destScrollInfo.height - destScrollInfo.clientHeight - botDist) * (1 - mix);
-        }
-      }
-
-      if (targetPos != this.props.scrollTop) {
-        this.props.setScroll(this.props.textId, sourceId, targetPos, scrollAt)
-      }
+  onShow() {
+    if (this.props.chapter.text == this.props.textId) {
+      this.props.selectActiveChapterWithDelay(this.props.chapter.id);
     }
-    if (this.props.scrollTop != prevProps.scrollTop
-        && this.refs.editor.codeMirror.getScrollInfo().top != this.props.scrollTop) {
+  }
+
+  onFocus(id) {
+    if (this.props.chapter.text == this.props.textId) {
+      this.props.selectActiveChapter(this.props.chapter.id);
+    }
+  }
+
+  onChange() {
+    if (this.lastTextSet + 50 <= +new Date) {
+      this.props.saveText(this.props.textId, this.cm.getValue());
+    }
+  }
+
+  onHeightChange() {
+    const heights = [];
+    this.cm.eachLine(line => {
+      heights.push(this.cm.heightAtLine(line, 'local'));
+    });
+
+    const fullHeight = this.cm.getScrollInfo().height;
+    this.props.updateLinesHeights(this.props.textId, heights, fullHeight);
+  }
+
+  onScroll() {
+    if (this.lastScrollSet + 50 > +new Date) return false;
+    const targets = new Set;
+    targets.add(this.props.chapter.text);
+    for (let [,text] of Object.entries(this.props.chapter.langs)) {
+      targets.add(text);
+    }
+    targets.delete(this.props.textId);
+    this.props.syncScroll(this.props.textId, this.cm.getScrollInfo().top, Array.from(targets));
+  }
+
+  onResize() {
+    if (!this.props.glContainer.isHidden) {
+      this.props.updateClientHeight(this.props.textId, this.cm.getScrollInfo().clientHeight);
+    }
+  }
+
+  onViewportChange() {
+    const {from, to} = this.cm.getViewport();
+    const fullHeight = this.cm.getScrollInfo().height;
+    this.props.updateFullHeight(this.props.textId, fullHeight);
+    this.props.updateViewport(this.props.textId, from, to);
+  }
+
+  refreshCM() {
+    setTimeout(() => this.cm.refresh(), 0);
+    this.onResize();
+  }
+
+  render() {
+    return <div><textarea ref="textarea" autoComplete="off"/></div>;
+  }
+
+
+  componentDidUpdate(prevProps) {
+    if (this.props.text != prevProps.text && this.cm.getValue() != this.props.text) {
+      this.lastTextSet = +new Date;
+      this.cm.setValue(this.props.text);
+      this.onViewportChange();
+    }
+    if (this.props.scrollTop != prevProps.scrollTop && this.cm.getScrollInfo().top != this.props.scrollTop) {
       this.lastScrollSet = +new Date;
-      this.refs.editor.codeMirror.scrollTo(null, this.props.scrollTop);
+      this.cm.scrollTo(null, this.props.scrollTop);
     }
   }
 
@@ -141,9 +149,9 @@ class CodeMirrorTextFrame extends React.Component {
     text: React.PropTypes.string.isRequired,
     textId: React.PropTypes.number.isRequired,
     scrollTop: React.PropTypes.number.isRequired,
-    scrollSetAt: React.PropTypes.number.isRequired,
-    onFocus: React.PropTypes.func,
-    updateLinesHeights: React.PropTypes.func.isRequired,
+    // scrollSetAt: React.PropTypes.number.isRequired,
+    // onFocus: React.PropTypes.func,
+    // updateLinesHeights: React.PropTypes.func.isRequired,
   };
 }
 

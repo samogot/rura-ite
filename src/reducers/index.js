@@ -7,11 +7,11 @@ import chaptersData from './data/chaptersDataReducer';
 
 export default combineReducers({
   view: (state, action) => {
-    action.curLayoutState = state.layout;
+    action.curLayoutState = state && state.layout;
     return combineReducers({
       layout: layoutView,
       texts: textsView,
-    })
+    })(state, action)
   },
   data: combineReducers({
     texts: textsData,

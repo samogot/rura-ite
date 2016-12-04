@@ -1,13 +1,18 @@
 import {connect} from 'react-redux';
-// import * as actions from '../actions/layoutView';
 import CodeMirrorTextFrame from '../components/CodeMirrorTextFrame';
+import * as commons from './TextContainerCommons';
 
 
 function mapStateToProps(state, ownProps) {
+  const textId = state.data.chapters[state.view.texts.activeChapter].langs[ownProps.lang];
   return {
-    text: state.data.texts[state.data.chapters[state.view.texts.activeChapter].langs[ownProps.lang]].wiki,
-    glContainer: ownProps.glContainer,
+    ...commons.mapStateToProps(state, ownProps, textId),
+    chapter: state.data.chapters[state.view.texts.activeChapter],
   };
 }
 
-export default connect(mapStateToProps)(CodeMirrorTextFrame);
+function mapDispatchToProps(dispatch, ownProps) {
+  return commons.mapDispatchToProps(dispatch, ownProps);
+}
+
+export default connect(mapStateToProps, mapDispatchToProps)(CodeMirrorTextFrame);

@@ -13,12 +13,17 @@ export function selectActiveChapterWithDelay(id) {
 }
 
 export function updateLinesHeights(id, heights, fullHeight) {
-  return {
-    type: T.TEXTS_VIEW.UPDATE_LINES_HEIGHTS,
-    id,
-    heights,
-    fullHeight,
-  }
+  return [
+    {
+      type: T.TEXTS_VIEW.UPDATE_LINES_HEIGHTS,
+      id,
+      heights,
+      fullHeight,
+    },
+    {
+      type: T.TEXTS_VIEW.UPDATE_OFFSETS
+    }
+  ]
 }
 export function updateFullHeight(id, fullHeight) {
   return {

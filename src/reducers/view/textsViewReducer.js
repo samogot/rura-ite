@@ -94,8 +94,95 @@ function computeTargetScrollPositions(state, sourceId, scrollTop, targets) {
 
     targetScrollTop[targetId] = Math.round(targetPos);
   }
-  // console.log(midY,midLine, ratio, ...log)
+  // console.log(midY, midLine, ratio, ...log)
   return targetScrollTop;
+}
+
+function computeOffsets(fullState) {
+  const textSets = [];
+  fullState.view.layout.config.content.forEach(function recursiveAll(item) {
+    switch (item.type) {
+      case 'column':
+        item.content.forEach(recursiveAll);
+        break;
+      case 'row':
+        const columns = [];
+        item.content.forEach(function recursiveColumns(column) {
+          switch (column.type) {
+            case 'row':
+              column.content.forEach(recursiveColumns);
+              break;
+            case 'stack':
+              recursiveColumns(column.content[column.activeItemIndex || 0]);
+              break;
+            case 'react-component':
+            case 'component':
+              columns.push(column);
+              break;
+            default:
+              column.content && column.content.forEach(recursiveAll);
+          }
+        });
+        columns.filter((item) => {
+          return item.id == `main-text-$(fullState.view.texts.activeChapter)` || item.component == 'text-orig-component';
+        });
+        if (columns.length > 1) {
+          textSets.push(columns.map((item) => {
+            if (item.component == 'text-orig-component') {
+              return fullState.data.chapters[fullState.view.texts.activeChapter].langs[item.props.lang];
+            }
+            else if (item.component == 'text-main-component') {
+              return fullState.data.chapters[item.props.chapter].text;
+            }
+          }));
+        }
+        break;
+    }
+  });
+
+  const resultOfsets = {}, state = fullState.view.texts;
+
+  const prevOffset = (id, line) => state[id].offsets[line] || 0;
+  const prevLineTop = (id, line) => state[id].heights[line];
+  const prevLineBottom = (id, line) => prevLineTop(id, line + 1);
+  const prevLineExists = prevLineBottom;
+  const prevLineHeightWithOffset = (id, line) => prevLineBottom(id, line) - prevLineTop(id, line);
+  const prevLineTrueHeight = (id, line) => prevLineHeightWithOffset(id, line) - prevOffset(id, line);
+  const resultOffset = (id, line) => resultOfsets[id].offsets[line];
+  const resultLineTop = (id, line) => resultOfsets[id].heights[line];
+
+
+  for (const textSet of textSets) {
+    for (let id of textSet) {
+      resultOfsets[id] = {offsets: []};
+    }
+    const maxLines = textSet.reduce((max, textId) => Math.max(max, state[textId].heights.length), 0) - 1;
+    for (let line = 0; line < maxLines; ++line) {
+      let maxLineHeight = 0;
+      for (let id of textSet) {
+        if (prevLineExists(id, line)) {
+          maxLineHeight = Math.max(maxLineHeight, prevLineTrueHeight(id, line));
+        }
+      }
+      for (let id of textSet) {
+        if (prevLineExists(id, line)) {
+          //resultOffset
+          resultOfsets[id].offsets[line] = maxLineHeight - prevLineTrueHeight(id, line);
+        }
+      }
+    }
+  }
+  for (let id in resultOfsets) {
+    resultOfsets[id].heights = [prevLineTop(id, 0)];
+    for (let line = 0; line < resultOfsets[id].offsets.length; ++line) {
+      //resultLineBottom
+      resultOfsets[id].heights[line + 1] = resultLineTop(id, line) + prevLineTrueHeight(id, line) + resultOffset(id, line);
+    }
+    //restultFullHeight
+    resultOfsets[id].heights[resultOfsets[id].heights.length - 1] += resultLineTop(id, 0);
+  }
+  // console.log("computeOffsets", fullState, textSets, resultOfsets);
+  return resultOfsets;
 }
 
 export default typeReducers(ACTION_TYPES.TEXTS_VIEW, defaultState, {
@@ -115,6 +202,19 @@ export default typeReducers(ACTION_TYPES.TEXTS_VIEW, defaultState, {
             ...state[id].scrollInfo,
             top,
           },
+        },
+      }), {}),
+    }
+  },
+  UPDATE_OFFSETS: (state, {}, fullState) => {
+    const newOffsets = computeOffsets(fullState);
+    return {
+      ...state,
+      ...Object.entries(newOffsets).reduce((texts, [id,newTextState]) => ({
+        ...texts,
+        [id]: {
+          ...state[id],
+          ...newTextState,
         },
       }), {}),
     }

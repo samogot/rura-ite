@@ -9,6 +9,7 @@ export function mapStateToProps(state, ownProps, textId) {
     textId: textId,
     text: state.data.texts[textId].wiki,
     scrollTop: textView.scrollInfo.top || 0,
+    offsets: textView.offsets || [],
     glContainer: ownProps.glContainer,
   };
 }

@@ -50,6 +50,7 @@
     "golden-layout": "^1.5.6",
     "invariant": "^2.1.1",
     "lodash.debounce": "^4.0.8",
+    "lodash.isequal": "^4.4.0",
     "lodash.throttle": "^4.1.1",
     "lorem-ipsum": "^1.0.3",
     "react": "^0.14.0",

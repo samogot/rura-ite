@@ -34,7 +34,7 @@ const createStoreWithBatching = batchedSubscribe(
 
 // Create a store with our application reducer
 const preloadedState = JSON.parse(window.localStorage.getItem("redux-store")) || undefined;
-const store = createStoreWithBatching(rootReducer, preloadedState);
+const store = createStoreWithBatching(rootReducer, preloadedState, window.__REDUX_DEVTOOLS_EXTENSION__ && window.__REDUX_DEVTOOLS_EXTENSION__());
 
 // Handle changes to our store with a list of actor functions, but ensure
 // that the actor sequence cannot be started by a dispatch from an actor
@@ -87,7 +87,8 @@ if (!preloadedState) {
           component: 'text-orig-component',
           id: 'orig-text-jp',
           props: {lang: 'jp'}
-        }, {
+        },
+        {
           type: 'stack',
           content: [
             {

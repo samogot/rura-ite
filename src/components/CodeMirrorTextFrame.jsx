@@ -1,9 +1,12 @@
-import CodeMirror from 'codemirror';
+import 'codemirror/addon/selection/active-line';
+import 'codemirror/mode/mediawiki/mediawiki';
 import 'codemirror/lib/codemirror.css';
 import './CodeMirrorTextFrame.styl';
+import CodeMirror from 'codemirror';
 import {pacomoDecorator} from '../utils/pacomo';
 const throttle = require('lodash.throttle');
 const debounce = require('lodash.debounce');
+const isequal = require('lodash.isequal');
 
 function normalizeLineEndings(str) {
   if (!str) return str;
@@ -19,11 +22,12 @@ class CodeMirrorTextFrame extends React.Component {
     this.onShow = this.onShow.bind(this);
     this.onChange = this.onChange.bind(this);
     this.onHeightChange = debounce(this.onHeightChange.bind(this), 200);
-    this.onScroll = throttle(this.onScroll.bind(this), 16);
-    this.onResize = this.onResize.bind(this);
+    this.onScroll = throttle(this.onScroll.bind(this), 16, {leading: true});
+    this.onResize = debounce(this.onResize.bind(this), 50);
     this.onViewportChange = this.onViewportChange.bind(this);
     this.lastScrollSet = 0;
     this.lastTextSet = 0;
+    this.alignMarks = [];
   }
 
   componentDidMount() {
@@ -33,23 +37,21 @@ class CodeMirrorTextFrame extends React.Component {
       lineWrapping: true,
       styleActiveLine: true,
       scrollbarStyle: 'native',
-      // mwextUrlProtocols: mwextUrlProtocolsVAL,
-      // mwextTags: mwextTagsVAL,
-      // mwextFunctionSynonyms: mwextFunctionSynonymsVAL,
-      // mode: "mediawiki",
+      mode: "mediawiki",
     };
 
     this.cm = CodeMirror.fromTextArea(this.refs.textarea, options);
     this.props.glContainer.on('open', this.refreshCM);
     this.props.glContainer.on('show', this.refreshCM);
-    this.props.glContainer.on('show', this.onShow);
+    this.props.glContainer.on('resize', this.refreshCM);
     this.props.glContainer.on('resize', this.onResize);
+    this.props.glContainer.on('show', this.onShow);
     this.cm.on('focus', this.onFocus);
     this.cm.on("change", this.onChange);
     this.cm.on("change", this.onHeightChange);
     this.cm.on("scroll", this.onScroll);
     this.cm.on("viewportChange", this.onViewportChange);
-    this.componentDidUpdate({scrollTop: 0, text: ''});
+    this.componentDidUpdate({scrollTop: 0, text: '', offsets: []});
     if (!this.props.glContainer.isHidden && this.props.chapter.text == this.props.textId) {
       window.cm = this.cm;
     }
@@ -58,13 +60,57 @@ class CodeMirrorTextFrame extends React.Component {
   componentWillUnmount() {
     this.props.glContainer.off('open', this.refreshCM);
     this.props.glContainer.off('show', this.refreshCM);
-    this.props.glContainer.off('show', this.onShow);
+    this.props.glContainer.off('resize', this.refreshCM);
     this.props.glContainer.off('resize', this.onResize);
+    this.props.glContainer.off('show', this.onShow);
     this.cm.off('focus', this.onFocus);
     this.cm.off("change", this.onChange);
     this.cm.off("change", this.onHeightChange);
     this.cm.off("scroll", this.onScroll);
     this.cm.toTextArea();
+  }
+
+  render() {
+    return <div><textarea ref="textarea" autoComplete="off"/></div>;
+  }
+
+  componentDidUpdate(prevProps) {
+    if (this.props.text != prevProps.text && this.cm.getValue() != this.props.text) {
+      this.lastTextSet = +new Date;
+      this.cm.setValue(this.props.text);
+      this.onViewportChange();
+      // for (const marker of this.alignMarks) {
+      //   marker.clear();
+      // }
+      // this.alignMarks = [];
+    }
+    if (this.props.scrollTop != prevProps.scrollTop && this.cm.getScrollInfo().top != this.props.scrollTop) {
+      this.lastScrollSet = +new Date;
+      this.cm.scrollTo(null, this.props.scrollTop);
+    }
+    if (this.props.offsets != prevProps.offsets) {
+      // console.log(this.alignMarks);
+      const length = Math.min(this.props.offsets.length, this.cm.lineCount());
+      for (let i = 0; i < length; ++i) {
+        if (!this.alignMarks[i]) {
+          const elt = document.createElement("div");
+          elt.className = "CodeMirror-align-spacer";
+          elt.style.height = this.props.offsets[i] + "px";
+          elt.style.minWidth = "1px";
+          this.alignMarks[i] = this.cm.addLineWidget(i, elt);
+        }
+        else if (this.props.offsets[i] != prevProps.offsets[i] && this.props.offsets[i] != this.alignMarks[i].height) {
+          this.alignMarks[i].node.style.height = this.props.offsets[i] + "px";
+          this.alignMarks[i].changed();
+        }
+      }
+      for (let i = length; i < this.alignMarks.length; ++i) {
+        if (this.alignMarks[i]) {
+          this.alignMarks[i].clear();
+          this.alignMarks[i] = null;
+        }
+      }
+    }
   }
 
   onShow() {
@@ -96,7 +142,7 @@ class CodeMirrorTextFrame extends React.Component {
   }
 
   onScroll() {
-    if (this.lastScrollSet + 50 > +new Date) return false;
+    if (this.lastScrollSet + 200 > +new Date) return false;
     const targets = new Set;
     targets.add(this.props.chapter.text);
     for (let [,text] of Object.entries(this.props.chapter.langs)) {
@@ -109,36 +155,19 @@ class CodeMirrorTextFrame extends React.Component {
   onResize() {
     if (!this.props.glContainer.isHidden) {
       this.props.updateClientHeight(this.props.textId, this.cm.getScrollInfo().clientHeight);
+      this.onHeightChange();
     }
   }
 
   onViewportChange() {
     const {from, to} = this.cm.getViewport();
-    const fullHeight = this.cm.getScrollInfo().height;
-    this.props.updateFullHeight(this.props.textId, fullHeight);
+    this.onHeightChange();
     this.props.updateViewport(this.props.textId, from, to);
   }
 
   refreshCM() {
     setTimeout(() => this.cm.refresh(), 0);
     this.onResize();
-  }
-
-  render() {
-    return <div><textarea ref="textarea" autoComplete="off"/></div>;
-  }
-
-
-  componentDidUpdate(prevProps) {
-    if (this.props.text != prevProps.text && this.cm.getValue() != this.props.text) {
-      this.lastTextSet = +new Date;
-      this.cm.setValue(this.props.text);
-      this.onViewportChange();
-    }
-    if (this.props.scrollTop != prevProps.scrollTop && this.cm.getScrollInfo().top != this.props.scrollTop) {
-      this.lastScrollSet = +new Date;
-      this.cm.scrollTo(null, this.props.scrollTop);
-    }
   }
 
   static propTypes = {
@@ -157,5 +186,3 @@ class CodeMirrorTextFrame extends React.Component {
 
 
 export default pacomoDecorator(CodeMirrorTextFrame);
-
-//TODO CM height fix on viewport load

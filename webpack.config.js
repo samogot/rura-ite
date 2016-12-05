@@ -73,7 +73,8 @@ export default (DEBUG, PATH, PORT = 3000) => ({
   plugins: [
     new webpack.ProvidePlugin({
       React: "react",
-      ReactDOM: "react-dom"
+      ReactDOM: "react-dom",
+      CodeMirror: "codemirror",
     }),
     ...(DEBUG
       ? [new webpack.HotModuleReplacementPlugin()]
@@ -97,7 +98,7 @@ export default (DEBUG, PATH, PORT = 3000) => ({
   resolve: {
     root: path.join(__dirname, "node_modules"),
 
-    modulesDirectories: ['node_modules'],
+    modulesDirectories: ['node_modules', 'non_npm_modules'],
 
     alias: {
       environment: DEBUG

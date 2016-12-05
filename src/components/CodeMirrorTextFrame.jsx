@@ -186,3 +186,11 @@ class CodeMirrorTextFrame extends React.Component {
 
 
 export default pacomoDecorator(CodeMirrorTextFrame);
+
+//TODO error on popout
+//TODO simple scroll sync for aligned texts
+//TODO fix offset leaking
+//TODO merge actions? simplify handlers?
+//TODO copy handler
+//TODO menu, toolbar, options
+//TODO react-intl

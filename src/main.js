@@ -1,11 +1,10 @@
-import {createStore, applyMiddleware} from 'redux';
+import {createStore, applyMiddleware, compose} from 'redux';
 import reduxThunk from 'redux-thunk';
 import reduxMulti from 'redux-multi';
 import createLogger from 'redux-logger';
 import React from 'react';
 import ReactDOM from 'react-dom';
 import {Provider} from 'react-redux';
-import {batchedSubscribe} from 'redux-batched-subscribe';
 import actors from './actors';
 import rootReducer from './reducers';
 import Application from './Application';
@@ -17,24 +16,30 @@ import * as chaptersDataActions from './actions/chaptersData';
 import * as textsViewActions from './actions/textsView';
 import lorem from 'lorem-ipsum';
 
-const reduxLog = createLogger({collapsed: true});
+const composeEnhancers = process.env.NODE_ENV !== 'production' && window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__
+  ? window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__ : compose;
 
+const enhancer = composeEnhancers(
 // Add middleware to allow our action creators to return functions and arrays
-const createStoreWithMiddleware = applyMiddleware(
-  reduxThunk,
-  reduxMulti,
-  // reduxLog,
-)(createStore);
+  applyMiddleware(
+    reduxThunk,
+    reduxMulti,
+    createLogger({collapsed: true}),
+  ),
 
 // Ensure our listeners are only called once, even when one of the above
 // middleware call the underlying store's `dispatch` multiple times
-const createStoreWithBatching = batchedSubscribe(
-  fn => fn()
-)(createStoreWithMiddleware);
+//   batchedSubscribe(
+//     ReactDOM.unstable_batchedUpdates
+  // notify => notify()
+  // debounce(notify => notify())
+  // ),
+);
+
 
 // Create a store with our application reducer
 const preloadedState = JSON.parse(window.localStorage.getItem("redux-store")) || undefined;
-const store = createStoreWithBatching(rootReducer, preloadedState, window.__REDUX_DEVTOOLS_EXTENSION__ && window.__REDUX_DEVTOOLS_EXTENSION__());
+const store = createStore(rootReducer, preloadedState, enhancer);
 
 // Handle changes to our store with a list of actor functions, but ensure
 // that the actor sequence cannot be started by a dispatch from an actor

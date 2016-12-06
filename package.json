@@ -47,7 +47,7 @@
   "dependencies": {
     "babel-polyfill": "^6.1.4",
     "babel-runtime": "^6.0.14",
-    "golden-layout": "^1.5.6",
+    "golden-layout": "github:samogot/golden-layout",
     "invariant": "^2.1.1",
     "lodash.debounce": "^4.0.8",
     "lodash.isequal": "^4.4.0",

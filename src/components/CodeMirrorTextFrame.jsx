@@ -85,25 +85,27 @@ class CodeMirrorTextFrame extends React.Component {
     if (this.props.offsets != prevProps.offsets) {
       // console.log(this.alignMarks);
       const length = Math.min(this.props.offsets.length, this.cm.lineCount());
-      for (let i = 0; i < length; ++i) {
-        if (!this.alignMarks[i]) {
-          const elt = document.createElement("div");
-          elt.className = "CodeMirror-align-spacer";
-          elt.style.height = this.props.offsets[i] + "px";
-          elt.style.minWidth = "1px";
-          this.alignMarks[i] = this.cm.addLineWidget(i, elt);
+      this.cm.operation(() => {
+        for (let i = 0; i < length; ++i) {
+          if (!this.alignMarks[i]) {
+            const elt = document.createElement("div");
+            elt.className = "CodeMirror-align-spacer";
+            elt.style.height = this.props.offsets[i] + "px";
+            elt.style.minWidth = "1px";
+            this.alignMarks[i] = this.cm.addLineWidget(i, elt);
+          }
+          else if (this.props.offsets[i] != prevProps.offsets[i] && this.props.offsets[i] != this.alignMarks[i].height) {
+            this.alignMarks[i].node.style.height = this.props.offsets[i] + "px";
+            this.alignMarks[i].changed();
+          }
         }
-        else if (this.props.offsets[i] != prevProps.offsets[i] && this.props.offsets[i] != this.alignMarks[i].height) {
-          this.alignMarks[i].node.style.height = this.props.offsets[i] + "px";
-          this.alignMarks[i].changed();
+        for (let i = length; i < this.alignMarks.length; ++i) {
+          if (this.alignMarks[i]) {
+            this.alignMarks[i].clear();
+            this.alignMarks[i] = null;
+          }
         }
-      }
-      for (let i = length; i < this.alignMarks.length; ++i) {
-        if (this.alignMarks[i]) {
-          this.alignMarks[i].clear();
-          this.alignMarks[i] = null;
-        }
-      }
+      });
     }
   }
 
@@ -184,7 +186,6 @@ class CodeMirrorTextFrame extends React.Component {
 
 export default pacomoDecorator(CodeMirrorTextFrame);
 
-//TODO error on popout
 //TODO copy handler
 //TODO menu, toolbar, options
 //TODO react-intl

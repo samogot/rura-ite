@@ -195,6 +195,11 @@ export default typeReducers(ACTION_TYPES.TEXTS_VIEW, defaultState, {
   },
   UPDATE_OFFSETS: (state, {}, fullState) => {
     const newOffsets = computeOffsets(state, fullState.view.layout.alignedTextSets);
+    for (let id in state) {
+      if (state.hasOwnProperty(id) && typeof state[id] == 'object' && !newOffsets.hasOwnProperty(id)) {
+        newOffsets[id] = {offsets: []};
+      }
+    }
     return {
       ...state,
       ...Object.entries(newOffsets).reduce((texts, [id,newTextState]) => ({
@@ -204,7 +209,7 @@ export default typeReducers(ACTION_TYPES.TEXTS_VIEW, defaultState, {
           ...newTextState,
         },
       }), {}),
-    }
+    };
   },
   UPDATE_LINES_HEIGHTS: delegateReducerById(oneItemReducer),
   UPDATE_CLIENT_HEIGHT: delegateReducerById(oneItemReducer),

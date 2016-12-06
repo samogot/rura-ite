@@ -8,6 +8,7 @@ import TestItem from './TestItem';
 import GoldenLayoutLib from 'golden-layout';
 import {connect} from 'react-redux';
 import storeShape from 'react-redux/lib/utils/storeShape';
+import debounce from 'lodash.debounce';
 
 
 class GoldenLayout extends React.Component {
@@ -77,13 +78,11 @@ class GoldenLayout extends React.Component {
     //   }
     // };
 
-    const changeListner = () => {
-      if (this.changeListnerTimeout) {
-        clearTimeout(this.changeListnerTimeout);
-        this.changeListnerTimeout = false;
+    const changeListner = debounce(() => {
+      if (this.gl.isInitialised && this.gl.openPopouts.every((w) => w.isInitialised)) {
+        this.props.saveLayout(this.gl.toConfig())
       }
-      this.changeListnerTimeout = setTimeout(() => this.props.saveLayout(this.gl.toConfig()), 1000);
-    };
+    }, 1000, {leading: true, trailing: true});
 
     this.gl.on('stateChanged', changeListner);
     this.unsubscribeChanges = () => this.gl.off('stateChanged', changeListner);

@@ -17,31 +17,26 @@ const defaultItem = {
 };
 
 const oneItemReducer = typeReducers(ACTION_TYPES.TEXTS_VIEW, defaultItem, {
-  UPDATE_LINES_HEIGHTS: (state, {heights, fullHeight}) => ({
-    ...state,
-    heights: [...heights, fullHeight],
-    scrollInfo: {
-      ...state.scrollInfo,
-      height: fullHeight,
-    },
-  }),
-  UPDATE_FULL_HEIGHT: (state, {fullHeight}) => ({
-    ...state,
-    scrollInfo: {
-      ...state.scrollInfo,
-      height: fullHeight,
-    },
-  }),
+  UPDATE_LINES_HEIGHTS: (state, {viewport, heights, fullHeight}) => {
+    const newHeights = state.heights.slice();
+    newHeights[viewport.from] = null;
+    newHeights.splice(viewport.from, viewport.to - viewport.from + 1, ...heights);
+    return {
+      ...state,
+      viewport,
+      heights: newHeights,
+      scrollInfo: {
+        ...state.scrollInfo,
+        height: fullHeight,
+      },
+    }
+  },
   UPDATE_CLIENT_HEIGHT: (state, {clientHeight}) => ({
     ...state,
     scrollInfo: {
       ...state.scrollInfo,
       clientHeight,
     },
-  }),
-  UPDATE_VIEWPORT: (state, {viewport}) => ({
-    ...state,
-    viewport,
   }),
 });
 
@@ -51,7 +46,7 @@ const defaultState = {
 };
 
 
-function computeTargetScrollPositions(state, sourceId, scrollTop, targets) {
+function computeTargetScrollPositions(state, sourceId, scrollTop, targets, alignedTextSets) {
   const targetScrollTop = {};
   targetScrollTop[sourceId] = scrollTop;
   const {scrollInfo, viewport, heights: sourceHeights} = state[sourceId];
@@ -68,96 +63,70 @@ function computeTargetScrollPositions(state, sourceId, scrollTop, targets) {
   const ratio = (midY - sourceOffset.top) / (sourceOffset.bot - sourceOffset.top);
   // const log = []
   for (let targetId of targets) {
+    let targetPos;
     const {scrollInfo: targetScrollInfo, heights: targetHeights} = state[targetId];
-    const targetHalfScreen = .5 * targetScrollInfo.clientHeight;
-    const targetMax = targetHeights[targetHeights.length - 1];
-    const targetOffset = {top: targetHeights[midLine] || targetMax, bot: targetHeights[midLine + 1] || targetMax};
-    let targetPos = (targetOffset.top - targetHalfScreen) + ratio * (targetOffset.bot - targetOffset.top);
-    // log.push(targetId)
-    // log.push(targetPos)
 
-    let botDist, mix;
-    // Some careful tweaking to make sure no space is left out of view
-    // when scrolling to top or bottom.
-    if (targetPos > scrollInfo.top && (mix = scrollInfo.top / sourceHalfScreen) < 1) {
-      targetPos = targetPos * mix + scrollInfo.top * (1 - mix);
+    //for aligned texts use simple computing
+    if (alignedTextSets.some(set => set.includes(sourceId) && set.includes(targetId))) {
+      targetPos = scrollTop;
+      // log.push(targetPos)
     }
-    else if ((botDist = scrollInfo.height - scrollInfo.clientHeight - scrollInfo.top) < sourceHalfScreen) {
-      const botDistOther = targetScrollInfo.height - targetScrollInfo.clientHeight - targetPos;
-      if (botDistOther > botDist && (mix = botDist / sourceHalfScreen) < 1) {
-        targetPos = targetPos * mix + (targetScrollInfo.height - targetScrollInfo.clientHeight - botDist) * (1 - mix);
+    else {
+      const targetHalfScreen = .5 * targetScrollInfo.clientHeight;
+      const targetMax = targetHeights[targetHeights.length - 1];
+      const targetOffset = {top: targetHeights[midLine] || targetMax, bot: targetHeights[midLine + 1] || targetMax};
+      targetPos = (targetOffset.top - targetHalfScreen) + ratio * (targetOffset.bot - targetOffset.top);
+      // log.push(targetId)
+      // log.push(targetPos)
+
+      let botDist, mix;
+      // Some careful tweaking to make sure no space is left out of view
+      // when scrolling to top or bottom.
+      if (targetPos > scrollInfo.top && (mix = scrollInfo.top / sourceHalfScreen) < 1) {
+        targetPos = targetPos * mix + scrollInfo.top * (1 - mix);
       }
+      else if ((botDist = scrollInfo.height - scrollInfo.clientHeight - scrollInfo.top) < sourceHalfScreen) {
+        const botDistOther = targetScrollInfo.height - targetScrollInfo.clientHeight - targetPos;
+        if (botDistOther > botDist && (mix = botDist / sourceHalfScreen) < 1) {
+          targetPos = targetPos * mix + (targetScrollInfo.height - targetScrollInfo.clientHeight - botDist) * (1 - mix);
+        }
+      }
+      // log.push(targetPos)
     }
-    // log.push(targetPos)
     targetPos = Math.min(Math.max(targetPos, 0), targetScrollInfo.height - targetScrollInfo.clientHeight);
     // log.push(targetPos)
-
     targetScrollTop[targetId] = Math.round(targetPos);
   }
   // console.log(midY, midLine, ratio, ...log)
   return targetScrollTop;
 }
 
-function computeOffsets(fullState) {
-  const textSets = [];
-  fullState.view.layout.config.content.forEach(function recursiveAll(item) {
-    switch (item.type) {
-      case 'column':
-        item.content.forEach(recursiveAll);
-        break;
-      case 'row':
-        const columns = [];
-        item.content.forEach(function recursiveColumns(column) {
-          switch (column.type) {
-            case 'row':
-              column.content.forEach(recursiveColumns);
-              break;
-            case 'stack':
-              recursiveColumns(column.content[column.activeItemIndex || 0]);
-              break;
-            case 'react-component':
-            case 'component':
-              columns.push(column);
-              break;
-            default:
-              column.content && column.content.forEach(recursiveAll);
-          }
-        });
-        columns.filter((item) => {
-          return item.id == `main-text-$(fullState.view.texts.activeChapter)` || item.component == 'text-orig-component';
-        });
-        if (columns.length > 1) {
-          textSets.push(columns.map((item) => {
-            if (item.component == 'text-orig-component') {
-              return fullState.data.chapters[fullState.view.texts.activeChapter].langs[item.props.lang];
-            }
-            else if (item.component == 'text-main-component') {
-              return fullState.data.chapters[item.props.chapter].text;
-            }
-          }));
-        }
-        break;
-    }
-  });
+function computeOffsets(state, textSets) {
+  const resultOffsets = {};
 
-  const resultOfsets = {}, state = fullState.view.texts;
-
-  const prevOffset = (id, line) => state[id].offsets[line] || 0;
-  const prevLineTop = (id, line) => state[id].heights[line];
+  const prevState = (id) => state[id] || defaultItem;
+  const prevOffset = (id, line) => prevState(id).offsets[line] || 0;
+  const prevLineTop = (id, line) => prevState(id).heights[line];
   const prevLineBottom = (id, line) => prevLineTop(id, line + 1);
   const prevLineExists = prevLineBottom;
   const prevLineHeightWithOffset = (id, line) => prevLineBottom(id, line) - prevLineTop(id, line);
   const prevLineTrueHeight = (id, line) => prevLineHeightWithOffset(id, line) - prevOffset(id, line);
-  const resultOffset = (id, line) => resultOfsets[id].offsets[line];
-  const resultLineTop = (id, line) => resultOfsets[id].heights[line];
+  const resultOffset = (id, line) => resultOffsets[id].offsets[line];
+  const resultLineTop = (id, line) => resultOffsets[id].heights[line];
 
 
   for (const textSet of textSets) {
+    let minViewport = Infinity, maxViewport = 0;
+    const extraOffsets = {};
     for (let id of textSet) {
-      resultOfsets[id] = {offsets: []};
+      minViewport = Math.min(maxViewport, prevState(id).viewport.from);
+      maxViewport = Math.max(maxViewport, Math.min(prevState(id).heights.length - 1, prevState(id).viewport.to));
     }
-    const maxLines = textSet.reduce((max, textId) => Math.max(max, state[textId].heights.length), 0) - 1;
-    for (let line = 0; line < maxLines; ++line) {
+    for (let id of textSet) {
+      resultOffsets[id] = {offsets: prevState(id).offsets.slice(), minViewport, maxViewport};
+      extraOffsets[id] = 0;
+    }
+    for (let line = minViewport; line < maxViewport; ++line) {
       let maxLineHeight = 0;
       for (let id of textSet) {
         if (prevLineExists(id, line)) {
@@ -167,22 +136,40 @@ function computeOffsets(fullState) {
       for (let id of textSet) {
         if (prevLineExists(id, line)) {
           //resultOffset
-          resultOfsets[id].offsets[line] = maxLineHeight - prevLineTrueHeight(id, line);
+          resultOffsets[id].offsets[line] = maxLineHeight - prevLineTrueHeight(id, line);
+        }
+        else {
+          extraOffsets[id] += maxLineHeight;
         }
       }
     }
-  }
-  for (let id in resultOfsets) {
-    resultOfsets[id].heights = [prevLineTop(id, 0)];
-    for (let line = 0; line < resultOfsets[id].offsets.length; ++line) {
-      //resultLineBottom
-      resultOfsets[id].heights[line + 1] = resultLineTop(id, line) + prevLineTrueHeight(id, line) + resultOffset(id, line);
+    for (let id of textSet) {
+      if (extraOffsets[id]) {
+        resultOffsets[id].offsets[resultOffsets[id].offsets.length - 1] += extraOffsets[id];
+      }
     }
-    //restultFullHeight
-    resultOfsets[id].heights[resultOfsets[id].heights.length - 1] += resultLineTop(id, 0);
   }
-  // console.log("computeOffsets", fullState, textSets, resultOfsets);
-  return resultOfsets;
+  for (let id in resultOffsets) {
+    resultOffsets[id].heights = prevState(id).heights.slice();
+    let totalOffsetsDiff = 0;
+    for (let line = resultOffsets[id].minViewport; line < resultOffsets[id].maxViewport; ++line) {
+      if (resultOffset(id, line) !== undefined) {
+        //resultLineBottom
+        resultOffsets[id].heights[line + 1] = resultLineTop(id, line) + prevLineTrueHeight(id, line) + resultOffset(id, line);
+        totalOffsetsDiff += resultOffset(id, line) - prevOffset(id, line);
+      }
+    }
+    resultOffsets[id] = {
+      heights: resultOffsets[id].heights,
+      offsets: resultOffsets[id].offsets,
+      scrollInfo: {
+        ...prevState(id).scrollInfo,
+        height: prevState(id).scrollInfo.height + totalOffsetsDiff,
+      },
+    };
+  }
+  // console.log("computeOffsets", fullState, textSets, resultOffsets);
+  return resultOffsets;
 }
 
 export default typeReducers(ACTION_TYPES.TEXTS_VIEW, defaultState, {
@@ -190,8 +177,8 @@ export default typeReducers(ACTION_TYPES.TEXTS_VIEW, defaultState, {
     ...state,
     activeChapter: chapter,
   }),
-  SYNC_SCROLL: (state, {id, scrollTop, targets}) => {
-    const targetScrollTop = computeTargetScrollPositions(state, id, scrollTop, targets);
+  SYNC_SCROLL: (state, {id, scrollTop, targets}, fullState) => {
+    const targetScrollTop = computeTargetScrollPositions(state, id, scrollTop, targets, fullState.view.layout.alignedTextSets);
     return {
       ...state,
       ...Object.entries(targetScrollTop).reduce((texts, [id,top]) => ({
@@ -207,7 +194,7 @@ export default typeReducers(ACTION_TYPES.TEXTS_VIEW, defaultState, {
     }
   },
   UPDATE_OFFSETS: (state, {}, fullState) => {
-    const newOffsets = computeOffsets(fullState);
+    const newOffsets = computeOffsets(state, fullState.view.layout.alignedTextSets);
     return {
       ...state,
       ...Object.entries(newOffsets).reduce((texts, [id,newTextState]) => ({
@@ -219,8 +206,6 @@ export default typeReducers(ACTION_TYPES.TEXTS_VIEW, defaultState, {
       }), {}),
     }
   },
-  UPDATE_FULL_HEIGHT: delegateReducerById(oneItemReducer),
   UPDATE_LINES_HEIGHTS: delegateReducerById(oneItemReducer),
   UPDATE_CLIENT_HEIGHT: delegateReducerById(oneItemReducer),
-  UPDATE_VIEWPORT: delegateReducerById(oneItemReducer),
 })

@@ -56,7 +56,7 @@ if (!preloadedState) {
   for (let i = 1; i < 7; ++i) {
     store.dispatch(textsDataActions.addText({
       id: i,
-      wiki: lorem({count: 20, units: 'paragraphs'}).replace(/\n\n/g, '\n')
+      wiki: lorem({count: 20 + i, units: 'paragraphs'}).replace(/\n\n/g, '\n')
     }));
   }
   for (let i = 1; i < 3; ++i) {
@@ -111,7 +111,6 @@ if (!preloadedState) {
     }]
   }));
 }
-window.store = store
 
 
 const APP_NODE = document.getElementById('react-app');
@@ -121,29 +120,3 @@ ReactDOM.render(
   </Provider>,
   APP_NODE
 );
-
-// var config = {
-//   content: [{
-//     type: 'row',
-//     content: [
-//       {
-//         type:'component',
-//         componentName: 'example',
-//         componentState: { text: 'Component 1' }
-//       },
-//       {
-//         type:'component',
-//         componentName: 'example',
-//         componentState: { text: 'Component 3' }
-//       }
-//     ]
-//   }]
-// } ;
-//
-//
-// let myLayout = new GoldenLayout( config ,document.getElementById('react-app'));
-//
-// myLayout.registerComponent( 'example', function( container, state ){
-//   container.getElement().html( '<h2>' + state.text + '</h2>');
-// });
-// myLayout.init();

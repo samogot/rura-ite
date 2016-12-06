@@ -4,9 +4,8 @@ import 'codemirror/lib/codemirror.css';
 import './CodeMirrorTextFrame.styl';
 import CodeMirror from 'codemirror';
 import {pacomoDecorator} from '../utils/pacomo';
-const throttle = require('lodash.throttle');
-const debounce = require('lodash.debounce');
-const isequal = require('lodash.isequal');
+import throttle from 'lodash.throttle';
+import debounce from 'lodash.debounce';
 
 function normalizeLineEndings(str) {
   if (!str) return str;
@@ -24,7 +23,6 @@ class CodeMirrorTextFrame extends React.Component {
     this.onHeightChange = debounce(this.onHeightChange.bind(this), 200);
     this.onScroll = throttle(this.onScroll.bind(this), 16, {leading: true});
     this.onResize = debounce(this.onResize.bind(this), 50);
-    this.onViewportChange = this.onViewportChange.bind(this);
     this.lastScrollSet = 0;
     this.lastTextSet = 0;
     this.alignMarks = [];
@@ -50,7 +48,7 @@ class CodeMirrorTextFrame extends React.Component {
     this.cm.on("change", this.onChange);
     this.cm.on("change", this.onHeightChange);
     this.cm.on("scroll", this.onScroll);
-    this.cm.on("viewportChange", this.onViewportChange);
+    this.cm.on("viewportChange", this.onHeightChange);
     this.componentDidUpdate({scrollTop: 0, text: '', offsets: []});
     if (!this.props.glContainer.isHidden && this.props.chapter.text == this.props.textId) {
       window.cm = this.cm;
@@ -67,6 +65,7 @@ class CodeMirrorTextFrame extends React.Component {
     this.cm.off("change", this.onChange);
     this.cm.off("change", this.onHeightChange);
     this.cm.off("scroll", this.onScroll);
+    this.cm.off("viewportChange", this.onHeightChange);
     this.cm.toTextArea();
   }
 
@@ -78,11 +77,6 @@ class CodeMirrorTextFrame extends React.Component {
     if (this.props.text != prevProps.text && this.cm.getValue() != this.props.text) {
       this.lastTextSet = +new Date;
       this.cm.setValue(this.props.text);
-      this.onViewportChange();
-      // for (const marker of this.alignMarks) {
-      //   marker.clear();
-      // }
-      // this.alignMarks = [];
     }
     if (this.props.scrollTop != prevProps.scrollTop && this.cm.getScrollInfo().top != this.props.scrollTop) {
       this.lastScrollSet = +new Date;
@@ -126,23 +120,31 @@ class CodeMirrorTextFrame extends React.Component {
   }
 
   onChange() {
-    if (this.lastTextSet + 50 <= +new Date) {
+    if (this.lastTextSet + 150 <= +new Date) {
       this.props.saveText(this.props.textId, this.cm.getValue());
     }
   }
 
-  onHeightChange() {
+  getViewportLinesHeights() {
+    const viewport = this.cm.getViewport();
     const heights = [];
-    this.cm.eachLine(line => {
-      heights.push(this.cm.heightAtLine(line, 'local'));
-    });
+    if (viewport.from < viewport.to) {
+      this.cm.eachLine(viewport.from, viewport.to, line => {
+        heights.push(this.cm.heightAtLine(line, 'local'));
+      });
+    }
+    heights.push(this.cm.heightAtLine(viewport.to, 'local'));
+    return {viewport, heights};
+  }
 
-    const fullHeight = this.cm.getScrollInfo().height;
-    this.props.updateLinesHeights(this.props.textId, heights, fullHeight);
+  onHeightChange() {
+    const {viewport, heights} = this.getViewportLinesHeights();
+    const scrollInfo = this.cm.getScrollInfo();
+    this.props.updateLinesHeights(this.props.textId, viewport, heights, scrollInfo.height);
   }
 
   onScroll() {
-    if (this.lastScrollSet + 200 > +new Date) return false;
+    if (this.lastScrollSet + 150 > +new Date) return false;
     const targets = new Set;
     targets.add(this.props.chapter.text);
     for (let [,text] of Object.entries(this.props.chapter.langs)) {
@@ -154,15 +156,10 @@ class CodeMirrorTextFrame extends React.Component {
 
   onResize() {
     if (!this.props.glContainer.isHidden) {
-      this.props.updateClientHeight(this.props.textId, this.cm.getScrollInfo().clientHeight);
-      this.onHeightChange();
+      const {viewport, heights} = this.getViewportLinesHeights();
+      const scrollInfo = this.cm.getScrollInfo();
+      this.props.updateAllHeights(this.props.textId, viewport, heights, scrollInfo);
     }
-  }
-
-  onViewportChange() {
-    const {from, to} = this.cm.getViewport();
-    this.onHeightChange();
-    this.props.updateViewport(this.props.textId, from, to);
   }
 
   refreshCM() {
@@ -188,9 +185,6 @@ class CodeMirrorTextFrame extends React.Component {
 export default pacomoDecorator(CodeMirrorTextFrame);
 
 //TODO error on popout
-//TODO simple scroll sync for aligned texts
-//TODO fix offset leaking
-//TODO merge actions? simplify handlers?
 //TODO copy handler
 //TODO menu, toolbar, options
 //TODO react-intl

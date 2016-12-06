@@ -6,7 +6,8 @@ export default (container) => class ReduxGoldenLayoutComponent extends React.Com
   constructor(props, context) {
     super(props, context);
     this.store = {
-      getState: () => JSON.parse(window.localStorage.getItem("redux-store")),
+      // getState: () => JSON.parse(window.localStorage.getItem("redux-store")),
+      getState: () => (window.opener || window)['$$gl-redux-bridge-state'],
       dispatch: (action) => {
         this.props.glEventHub.emit('redux-dispatch', action);
         return action;

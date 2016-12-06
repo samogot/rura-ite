@@ -44,7 +44,8 @@ class GoldenLayout extends React.Component {
 
   connectFakeStore() {
     const subscribeFakeListener = () => {
-      window.localStorage.setItem("redux-store", JSON.stringify(this.store.getState()));
+      window['$$gl-redux-bridge-state'] = this.store.getState();
+      // window.localStorage.setItem("redux-store", JSON.stringify(this.store.getState()));
       setTimeout(() => this.gl.eventHub.emit('redux-subscribe'), 0);
     };
 
@@ -52,7 +53,8 @@ class GoldenLayout extends React.Component {
       this.store.dispatch(action);
     };
 
-    window.localStorage.setItem("redux-store", JSON.stringify(this.store.getState()));
+    window['$$gl-redux-bridge-state'] = this.store.getState();
+    // window.localStorage.setItem("redux-store", JSON.stringify(this.store.getState()));
     const unsubscribe = this.store.subscribe(subscribeFakeListener);
     this.gl.eventHub.on('redux-dispatch', dispatchFromFake);
 

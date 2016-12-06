@@ -23,7 +23,7 @@ const reduxLog = createLogger({collapsed: true});
 const createStoreWithMiddleware = applyMiddleware(
   reduxThunk,
   reduxMulti,
-  reduxLog,
+  // reduxLog,
 )(createStore);
 
 // Ensure our listeners are only called once, even when one of the above
@@ -56,7 +56,7 @@ if (!preloadedState) {
   for (let i = 1; i < 7; ++i) {
     store.dispatch(textsDataActions.addText({
       id: i,
-      wiki: lorem({count: 20 + i, units: 'paragraphs'}).replace(/\n\n/g, '\n')
+      wiki: lorem({count: 20, units: 'paragraphs'}).replace(/\n\n/g, '\n')
     }));
   }
   for (let i = 1; i < 3; ++i) {

@@ -24,8 +24,9 @@ const enhancer = composeEnhancers(
   applyMiddleware(
     reduxThunk,
     reduxMulti,
-    createLogger({collapsed: true}),
+    createLogger({collapsed: true, diff: true, trace: true}),
   ),
+
 
 // Ensure our listeners are only called once, even when one of the above
 // middleware call the underlying store's `dispatch` multiple times
@@ -35,7 +36,6 @@ const enhancer = composeEnhancers(
   // debounce(notify => notify())
   // ),
 );
-
 
 // Create a store with our application reducer
 const preloadedState = JSON.parse(window.localStorage.getItem("redux-store")) || undefined;

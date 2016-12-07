@@ -74,11 +74,12 @@ class CodeMirrorTextFrame extends React.Component {
   }
 
   componentDidUpdate(prevProps) {
-    if (this.props.text != prevProps.text && this.cm.getValue() != this.props.text) {
+    // console.log('componentDidUpdate', this.props.textId, prevProps.scrollTop, this.props.scrollTop, this.cm.getScrollInfo().top);
+    if (this.cm.getValue() != this.props.text) {
       this.lastTextSet = +new Date;
       this.cm.setValue(this.props.text);
     }
-    if (this.props.scrollTop != prevProps.scrollTop && this.cm.getScrollInfo().top != this.props.scrollTop) {
+    if (this.cm.getScrollInfo().top != this.props.scrollTop) {
       this.lastScrollSet = +new Date;
       this.cm.scrollTo(null, this.props.scrollTop);
     }
@@ -92,9 +93,9 @@ class CodeMirrorTextFrame extends React.Component {
             elt.className = "CodeMirror-align-spacer";
             elt.style.height = this.props.offsets[i] + "px";
             elt.style.minWidth = "1px";
-            this.alignMarks[i] = this.cm.addLineWidget(i, elt);
+            this.alignMarks[i] = this.cm.addLineWidget(i, elt, {handleMouseEvents: true});
           }
-          else if (this.props.offsets[i] != prevProps.offsets[i] && this.props.offsets[i] != this.alignMarks[i].height) {
+          else if (this.props.offsets[i] != this.alignMarks[i].height) {
             this.alignMarks[i].node.style.height = this.props.offsets[i] + "px";
             this.alignMarks[i].changed();
           }
@@ -146,7 +147,9 @@ class CodeMirrorTextFrame extends React.Component {
   }
 
   onScroll() {
-    if (this.lastScrollSet + 150 > +new Date) return false;
+    const now = +new Date;
+    // console.log('onScroll', this.props.textId, this.lastScrollSet, now - this.lastScrollSet);
+    if (this.lastScrollSet + 250 > now) return false;
     const targets = new Set;
     targets.add(this.props.chapter.text);
     for (let [,text] of Object.entries(this.props.chapter.langs)) {

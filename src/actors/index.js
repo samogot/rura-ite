@@ -1,1 +1,5 @@
-export default []
+import autoSave from './autoSave';
+
+export default [
+  autoSave,
+];

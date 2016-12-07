@@ -11,6 +11,9 @@ export default defineActionTypes({
 
   TEXTS_VIEW: `
     SELECT_CHAPTER
+    SET_SCROLL
+    SCROLL_LINE
+    SCROLL_PARAGRAPH
     SYNC_SCROLL
     UPDATE_LINES_HEIGHTS
     UPDATE_CLIENT_HEIGHT
@@ -31,5 +34,9 @@ export default defineActionTypes({
     UPDATE
     ADD
     REMOVE
+  `,
+
+  CONFIG_DATA: `
+    SAVE_SCROLL_CONFIG
   `,
 })

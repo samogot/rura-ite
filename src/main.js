@@ -15,6 +15,7 @@ import * as textsDataActions from './actions/textsData';
 import * as chaptersDataActions from './actions/chaptersData';
 import * as textsViewActions from './actions/textsView';
 import lorem from 'lorem-ipsum';
+import VERSION from './constants/VERSION';
 
 const composeEnhancers = process.env.NODE_ENV !== 'production' && window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__
   ? window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__ : compose;
@@ -38,7 +39,7 @@ const enhancer = composeEnhancers(
 );
 
 // Create a store with our application reducer
-const preloadedState = JSON.parse(window.localStorage.getItem("redux-store")) || undefined;
+const preloadedState = JSON.parse(window.localStorage.getItem(`ite-redux-store-${VERSION}`)) || undefined;
 const store = createStore(rootReducer, preloadedState, enhancer);
 
 // Handle changes to our store with a list of actor functions, but ensure
@@ -80,18 +81,18 @@ if (!preloadedState) {
       type: 'row',
       content: [
         {
-          title: 'English',
-          type: 'react-component',
-          component: 'text-orig-component',
-          id: 'orig-text-en',
-          props: {lang: 'en'}
-        },
-        {
           title: 'Japan',
           type: 'react-component',
           component: 'text-orig-component',
           id: 'orig-text-jp',
           props: {lang: 'jp'}
+        },
+        {
+          title: 'English',
+          type: 'react-component',
+          component: 'text-orig-component',
+          id: 'orig-text-en',
+          props: {lang: 'en'}
         },
         {
           type: 'stack',

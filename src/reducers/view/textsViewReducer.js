@@ -1,6 +1,7 @@
 import typeReducers from '../../utils/typeReducers';
 import delegateReducerById from '../../utils/delegateReducerById';
 import ACTION_TYPES from '../../constants/ACTION_TYPES';
+import SCROLL_CONFIG from '../../constants/SCROLL_CONFIG';
 
 const defaultItem = {
   heights: [],
@@ -38,6 +39,39 @@ const oneItemReducer = typeReducers(ACTION_TYPES.TEXTS_VIEW, defaultItem, {
       clientHeight,
     },
   }),
+  SET_SCROLL: (state, {scrollTop}) => ({
+    ...state,
+    scrollInfo: {
+      ...state.scrollInfo,
+      top: scrollTop,
+    },
+  }),
+  SCROLL_LINE: (state, {ammount, lineHeight}) => {
+    const curTopLine = lineAtHeight(state.scrollInfo.top, state);
+    const extra = (state.scrollInfo.top - state.heights[curTopLine]) % lineHeight;
+    let newScrollTop = state.scrollInfo.top - extra + lineHeight * (ammount + (extra > 0 && ammount < 0));
+    newScrollTop = Math.min(Math.max(newScrollTop, 0), state.scrollInfo.height - state.scrollInfo.clientHeight);
+    return {
+      ...state,
+      scrollInfo: {
+        ...state.scrollInfo,
+        top: newScrollTop,
+      },
+    }
+  },
+  SCROLL_PARAGRAPH: (state, {ammount}) => {
+    const curTopLine = lineAtHeight(state.scrollInfo.top, state);
+    let destLine = curTopLine + ammount + (state.heights[curTopLine] != state.scrollInfo.top && ammount < 0);
+    destLine = Math.max(0, Math.min(destLine, state.heights.length - 1));
+    const newScrollTop = Math.min(Math.max(state.heights[destLine], 0), state.scrollInfo.height - state.scrollInfo.clientHeight);
+    return {
+      ...state,
+      scrollInfo: {
+        ...state.scrollInfo,
+        top: newScrollTop,
+      },
+    }
+  },
 });
 
 
@@ -45,20 +79,25 @@ const defaultState = {
   activeChapter: 0,
 };
 
-
-function computeTargetScrollPositions(state, sourceId, scrollTop, targets, alignedTextSets) {
-  const targetScrollTop = {};
-  targetScrollTop[sourceId] = scrollTop;
-  const {scrollInfo, viewport, heights: sourceHeights} = state[sourceId];
-  const sourceHalfScreen = .5 * scrollInfo.clientHeight,
-    midY = scrollTop + sourceHalfScreen;
-  let midLine = 0;
+function lineAtHeight(height, {viewport, heights}) {
+  let line = 0;
   for (let i = viewport.from; i < viewport.to; ++i) {
-    if (midY < sourceHeights[i]) {
-      midLine = i - 1;
+    if (height < heights[i]) {
+      line = i - 1;
       break;
     }
   }
+  return Math.max(0, line);
+}
+
+function computeTargetScrollPositions(state, sourceId, scrollTop, targets, alignedTextSets, scrollConfig) {
+  const targetScrollTop = {};
+  targetScrollTop[sourceId] = scrollTop;
+  const {scrollInfo, heights: sourceHeights} = state[sourceId];
+  const sourceHalfScreen = .5 * scrollInfo.clientHeight,
+    sourceAnchorPosition = scrollConfig.scrollAnchor * scrollInfo.clientHeight,
+    midY = scrollTop + sourceAnchorPosition;
+  const midLine = lineAtHeight(midY, state[sourceId]);
   const sourceOffset = {top: sourceHeights[midLine], bot: sourceHeights[midLine + 1]};
   const ratio = (midY - sourceOffset.top) / (sourceOffset.bot - sourceOffset.top);
   // const log = []
@@ -72,26 +111,28 @@ function computeTargetScrollPositions(state, sourceId, scrollTop, targets, align
       // log.push(targetPos)
     }
     else {
-      const targetHalfScreen = .5 * targetScrollInfo.clientHeight;
+      const targetAnchorPosition = scrollConfig.scrollAnchor * targetScrollInfo.clientHeight;
       const targetMax = targetHeights[targetHeights.length - 1];
       const targetOffset = {top: targetHeights[midLine] || targetMax, bot: targetHeights[midLine + 1] || targetMax};
-      targetPos = (targetOffset.top - targetHalfScreen) + ratio * (targetOffset.bot - targetOffset.top);
+      targetPos = (targetOffset.top - targetAnchorPosition) + ratio * (targetOffset.bot - targetOffset.top);
       // log.push(targetId)
       // log.push(targetPos)
 
-      let botDist, mix;
       // Some careful tweaking to make sure no space is left out of view
       // when scrolling to top or bottom.
-      if (targetPos > scrollInfo.top && (mix = scrollInfo.top / sourceHalfScreen) < 1) {
-        targetPos = targetPos * mix + scrollInfo.top * (1 - mix);
-      }
-      else if ((botDist = scrollInfo.height - scrollInfo.clientHeight - scrollInfo.top) < sourceHalfScreen) {
-        const botDistOther = targetScrollInfo.height - targetScrollInfo.clientHeight - targetPos;
-        if (botDistOther > botDist && (mix = botDist / sourceHalfScreen) < 1) {
-          targetPos = targetPos * mix + (targetScrollInfo.height - targetScrollInfo.clientHeight - botDist) * (1 - mix);
+      if (scrollConfig.syncTextEdges) {
+        let botDist, mix;
+        if (targetPos > scrollInfo.top && (mix = scrollInfo.top / sourceHalfScreen) < 1) {
+          targetPos = targetPos * mix + scrollInfo.top * (1 - mix);
         }
+        else if ((botDist = scrollInfo.height - scrollInfo.clientHeight - scrollInfo.top) < sourceHalfScreen) {
+          const botDistOther = targetScrollInfo.height - targetScrollInfo.clientHeight - targetPos;
+          if (botDistOther > botDist && (mix = botDist / sourceHalfScreen) < 1) {
+            targetPos = targetPos * mix + (targetScrollInfo.height - targetScrollInfo.clientHeight - botDist) * (1 - mix);
+          }
+        }
+        // log.push(targetPos)
       }
-      // log.push(targetPos)
     }
     targetPos = Math.min(Math.max(targetPos, 0), targetScrollInfo.height - targetScrollInfo.clientHeight);
     // log.push(targetPos)
@@ -172,13 +213,42 @@ function computeOffsets(state, textSets) {
   return resultOffsets;
 }
 
+function getAlignedTextSets(fullState) {
+  const syncedTexts = getSyncedTexts(fullState);
+  switch (fullState.data.config.scroll.alignLines) {
+    case SCROLL_CONFIG.ALIGN_LINES.ROW:
+      return fullState.view.layout.alignedTextSets.map(set => set.filter(text => syncedTexts.includes(text))).filter(set => set.length > 1);
+    case SCROLL_CONFIG.ALIGN_LINES.NEVER:
+      return [];
+    case SCROLL_CONFIG.ALIGN_LINES.ALL:
+      return [syncedTexts];
+  }
+}
+
+function getSyncedTexts(fullState) {
+  const targets = [];
+  const chapter = fullState.data.chapters[fullState.view.texts.activeChapter];
+  targets.push(chapter.text);
+  for (let [lang,text] of Object.entries(chapter.langs)) {
+    if (fullState.data.config.scroll.syncTexts === true || fullState.data.config.scroll.syncTexts[lang]) {
+      targets.push(text);
+    }
+  }
+  return targets;
+}
+
 export default typeReducers(ACTION_TYPES.TEXTS_VIEW, defaultState, {
   SELECT_CHAPTER: (state, {chapter}) => ({
     ...state,
     activeChapter: chapter,
   }),
-  SYNC_SCROLL: (state, {id, scrollTop, targets}, fullState) => {
-    const targetScrollTop = computeTargetScrollPositions(state, id, scrollTop, targets, fullState.view.layout.alignedTextSets);
+  SYNC_SCROLL: (state, {id}, fullState) => {
+    const scrollTop = state[id].scrollInfo.top;
+    const targets = getSyncedTexts(fullState);
+    if (!targets.includes(id))return state;
+    targets.splice(targets.indexOf(id), 1);
+    const alignedTextSets = getAlignedTextSets(fullState);
+    const targetScrollTop = computeTargetScrollPositions(state, id, scrollTop, targets, alignedTextSets, fullState.data.config.scroll);
     return {
       ...state,
       ...Object.entries(targetScrollTop).reduce((texts, [id,top]) => ({
@@ -194,7 +264,7 @@ export default typeReducers(ACTION_TYPES.TEXTS_VIEW, defaultState, {
     }
   },
   UPDATE_OFFSETS: (state, {}, fullState) => {
-    const newOffsets = computeOffsets(state, fullState.view.layout.alignedTextSets);
+    const newOffsets = computeOffsets(state, getAlignedTextSets(fullState));
     for (let id in state) {
       if (state.hasOwnProperty(id) && typeof state[id] == 'object' && !newOffsets.hasOwnProperty(id)) {
         newOffsets[id] = {offsets: []};
@@ -213,4 +283,7 @@ export default typeReducers(ACTION_TYPES.TEXTS_VIEW, defaultState, {
   },
   UPDATE_LINES_HEIGHTS: delegateReducerById(oneItemReducer),
   UPDATE_CLIENT_HEIGHT: delegateReducerById(oneItemReducer),
+  SET_SCROLL: delegateReducerById(oneItemReducer),
+  SCROLL_LINE: delegateReducerById(oneItemReducer),
+  SCROLL_PARAGRAPH: delegateReducerById(oneItemReducer),
 })

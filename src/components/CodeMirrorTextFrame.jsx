@@ -6,6 +6,7 @@ import CodeMirror from 'codemirror';
 import {pacomoDecorator} from '../utils/pacomo';
 import throttle from 'lodash.throttle';
 import debounce from 'lodash.debounce';
+import SCROLL_CONFIG from '../constants/SCROLL_CONFIG';
 
 function normalizeLineEndings(str) {
   if (!str) return str;
@@ -21,8 +22,9 @@ class CodeMirrorTextFrame extends React.Component {
     this.onShow = this.onShow.bind(this);
     this.onChange = this.onChange.bind(this);
     this.onHeightChange = debounce(this.onHeightChange.bind(this), 200);
-    this.onScroll = throttle(this.onScroll.bind(this), 16, {leading: true});
+    this.onScroll = throttle(this.onScroll.bind(this), 16);
     this.onResize = debounce(this.onResize.bind(this), 50);
+    this.onWheel = this.onWheel.bind(this);
     this.lastScrollSet = 0;
     this.lastTextSet = 0;
     this.alignMarks = [];
@@ -49,6 +51,7 @@ class CodeMirrorTextFrame extends React.Component {
     this.cm.on("change", this.onHeightChange);
     this.cm.on("scroll", this.onScroll);
     this.cm.on("viewportChange", this.onHeightChange);
+    this.cm.display.wrapper.addEventListener("wheel", this.onWheel);
     this.componentDidUpdate({scrollTop: 0, text: '', offsets: []});
     if (!this.props.glContainer.isHidden && this.props.chapter.text == this.props.textId) {
       window.cm = this.cm;
@@ -66,6 +69,7 @@ class CodeMirrorTextFrame extends React.Component {
     this.cm.off("change", this.onHeightChange);
     this.cm.off("scroll", this.onScroll);
     this.cm.off("viewportChange", this.onHeightChange);
+    this.cm.display.wrapper.removeEventListener("wheel", this.onWheel);
     this.cm.toTextArea();
   }
 
@@ -146,17 +150,31 @@ class CodeMirrorTextFrame extends React.Component {
     this.props.updateLinesHeights(this.props.textId, viewport, heights, scrollInfo.height);
   }
 
+  onWheel(e) {
+    const direction = Math.sign(e.deltaY);
+    switch (this.props.wheelBehaviour) {
+      case SCROLL_CONFIG.WHEEL_BEHAVIOUR.LINE:
+        const cursorCoords = this.cm.cursorCoords('local');
+        this.props.scrollLine(this.props.textId, this.props.wheelAmount * direction, cursorCoords.bottom - cursorCoords.top);
+        break;
+      case SCROLL_CONFIG.WHEEL_BEHAVIOUR.PARAGRAPH:
+        this.props.scrollParagraph(this.props.textId, this.props.wheelAmount * direction);
+        break;
+      case SCROLL_CONFIG.WHEEL_BEHAVIOUR.PIXEL:
+        this.props.setScroll(this.props.textId, this.props.scrollTop + this.props.wheelAmount * direction);
+        break;
+      default:
+        return;
+    }
+    e.stopPropagation();
+    e.preventDefault();
+  }
+
   onScroll() {
     const now = +new Date;
     // console.log('onScroll', this.props.textId, this.lastScrollSet, now - this.lastScrollSet);
     if (this.lastScrollSet + 250 > now) return false;
-    const targets = new Set;
-    targets.add(this.props.chapter.text);
-    for (let [,text] of Object.entries(this.props.chapter.langs)) {
-      targets.add(text);
-    }
-    targets.delete(this.props.textId);
-    this.props.syncScroll(this.props.textId, this.cm.getScrollInfo().top, Array.from(targets));
+    this.props.setScroll(this.props.textId, this.cm.getScrollInfo().top);
   }
 
   onResize() {

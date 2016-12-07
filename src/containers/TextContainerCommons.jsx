@@ -11,6 +11,8 @@ export function mapStateToProps(state, ownProps, textId) {
     scrollTop: textView.scrollInfo.top || 0,
     offsets: textView.offsets || [],
     glContainer: ownProps.glContainer,
+    wheelBehaviour: state.data.config.scroll.wheelBehaviour,
+    wheelAmount: state.data.config.scroll.wheelAmount,
   };
 }
 

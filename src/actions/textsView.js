@@ -54,12 +54,56 @@ export function updateAllHeights(id, viewport, heights, scrollInfo) {
   ]
 }
 
-export function syncScroll(id, scrollTop, targets) {
+export function syncScroll(id) {
   return {
     type: T.TEXTS_VIEW.SYNC_SCROLL,
     id,
-    scrollTop,
-    targets
   }
 }
 
+export function setScrollOnly(id, scrollTop) {
+  return {
+    type: T.TEXTS_VIEW.SET_SCROLL,
+    id,
+    scrollTop,
+  }
+}
+
+export function setScroll(id, scrollTop) {
+  return [
+    setScrollOnly(id, scrollTop),
+    syncScroll(id),
+  ];
+}
+
+export function scrollLineOnly(id, ammount, lineHeight) {
+  return {
+    type: T.TEXTS_VIEW.SCROLL_LINE,
+    id,
+    ammount,
+    lineHeight
+  }
+}
+
+export function scrollLine(id, ammount, lineHeight) {
+  return [
+    scrollLineOnly(id, ammount, lineHeight),
+    syncScroll(id),
+  ];
+}
+
+
+export function scrollParagraphOnly(id, ammount) {
+  return {
+    type: T.TEXTS_VIEW.SCROLL_PARAGRAPH,
+    id,
+    ammount,
+  }
+}
+
+export function scrollParagraph(id, ammount) {
+  return [
+    scrollParagraphOnly(id, ammount),
+    syncScroll(id),
+  ];
+}

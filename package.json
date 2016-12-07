@@ -55,6 +55,7 @@
     "lorem-ipsum": "^1.0.3",
     "react": "^0.14.0",
     "react-dom": "^0.14.0",
+    "react-modal": "^1.6.1",
     "react-pacomo": "^0.5.1",
     "redux": "^3.0.2",
     "redux-batched-subscribe": "^0.1.4",

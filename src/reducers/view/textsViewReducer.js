@@ -95,6 +95,36 @@ function lineAtHeight(height, {viewport, heights}) {
   return Math.max(0, line);
 }
 
+export function mergeAtLine(id, line, syncData, startFrom = 0) {
+  let merge = syncData.lineMerges.length;
+  for (let i = startFrom; i < syncData.lineMerges.length; ++i) {
+    if (syncData.lineMerges[i][id].to > line) {
+      merge = i;
+      break;
+    }
+  }
+  if (merge != syncData.lineMerges.length && syncData.lineMerges[merge][id].from <= line) {
+    return [syncData.lineMerges[merge], merge];
+  }
+  else if (merge) {
+    const res = {};
+    for (let [text,m] of Object.entries(syncData.lineMerges[merge - 1])) {
+      res[text] = {
+        from: m.to + line - syncData.lineMerges[merge - 1][id].to,
+        to: m.to + line - syncData.lineMerges[merge - 1][id].to + 1
+      }
+    }
+    return [res, merge - 1];
+  }
+  else {
+    const res = {};
+    for (let [,text] of Object.entries(syncData.syncedTexts)) {
+      res[text] = {from: line, to: line + 1}
+    }
+    return [res, 0];
+  }
+}
+
 function computeTargetScrollPositions(state, sourceId, scrollTop, targets, scrollConfig) {
   const targetScrollTop = {};
   targetScrollTop[sourceId] = scrollTop;

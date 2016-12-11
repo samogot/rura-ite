@@ -1,7 +1,9 @@
 import expect from 'expect';
 import reducers from '../../../src/reducers';
+import {mergeAtLine} from '../../../src/reducers/view/textsViewReducer';
 
 describe('textsViewReducer.js', () => {
+
   context('RECALC_LINE_MERGES', () => {
 
     it('should handle no merges', () => {
@@ -722,7 +724,7 @@ describe('textsViewReducer.js', () => {
       ]);
     });
 
-    it('should handle different fixed height four-way unmerge-merge-merge', () => {
+    xit('should handle different fixed height four-way unmerge-merge-merge', () => {
       let state;
       state = reducers({
           view: {texts: {syncData: {syncedTexts: {jp: 1, cn: 2, en: 3, ru: 4}}}},
@@ -853,4 +855,85 @@ describe('textsViewReducer.js', () => {
     });
 
   });
+
+  context('mergeAtLine', () => {
+
+    it('should handle no merges', () => {
+      const syncData = {syncedTexts: {jp: 1, en: 2, ru: 3}, lineMerges: []};
+      const [merge, continueFrom] = mergeAtLine(1, 0, syncData);
+      expect(merge).toEqual(
+        {'1': {from: 0, to: 1}, '2': {from: 0, to: 1}, '3': {from: 0, to: 1}}
+      );
+      expect(continueFrom).toEqual(0);
+    });
+
+    it('should handle exact merge', () => {
+      const syncData = {
+        syncedTexts: {jp: 1, en: 2, ru: 3}, lineMerges: [
+          {'1': {from: 1, to: 2}, '2': {from: 1, to: 3}, '3': {from: 1, to: 2}}
+        ]
+      };
+      const [merge, continueFrom] = mergeAtLine(1, 1, syncData);
+      expect(merge).toEqual(
+        {'1': {from: 1, to: 2}, '2': {from: 1, to: 3}, '3': {from: 1, to: 2}}
+      );
+      expect(continueFrom).toEqual(0);
+    });
+
+    it('should handle after last merge', () => {
+      const syncData = {
+        syncedTexts: {jp: 1, en: 2, ru: 3}, lineMerges: [
+          {'1': {from: 1, to: 2}, '2': {from: 1, to: 3}, '3': {from: 1, to: 2}}
+        ]
+      };
+      const [merge, continueFrom] = mergeAtLine(1, 2, syncData);
+      expect(merge).toEqual(
+        {'1': {from: 2, to: 3}, '2': {from: 3, to: 4}, '3': {from: 2, to: 3}}
+      );
+      expect(continueFrom).toEqual(0);
+    });
+
+    it('should handle before first merge', () => {
+      const syncData = {
+        syncedTexts: {jp: 1, en: 2, ru: 3}, lineMerges: [
+          {'1': {from: 1, to: 2}, '2': {from: 1, to: 3}, '3': {from: 1, to: 2}}
+        ]
+      };
+      const [merge, continueFrom] = mergeAtLine(1, 0, syncData);
+      expect(merge).toEqual(
+        {'1': {from: 0, to: 1}, '2': {from: 0, to: 1}, '3': {from: 0, to: 1}}
+      );
+      expect(continueFrom).toEqual(0);
+    });
+
+    it('should handle after between merges', () => {
+      const syncData = {
+        syncedTexts: {jp: 1, en: 2, ru: 3}, lineMerges: [
+          {'1': {from: 1, to: 2}, '2': {from: 1, to: 3}, '3': {from: 1, to: 2}},
+          {'1': {from: 5, to: 6}, '2': {from: 6, to: 7}, '3': {from: 5, to: 7}}
+        ]
+      };
+      const [merge, continueFrom] = mergeAtLine(1, 2, syncData);
+      expect(merge).toEqual(
+        {'1': {from: 2, to: 3}, '2': {from: 3, to: 4}, '3': {from: 2, to: 3}}
+      );
+      expect(continueFrom).toEqual(0);
+    });
+
+    it('should handle continueFrom', () => {
+      const syncData = {
+        syncedTexts: {jp: 1, en: 2, ru: 3}, lineMerges: [
+          {'1': {from: 1, to: 2}, '2': {from: 1, to: 3}, '3': {from: 1, to: 2}},
+          {'1': {from: 5, to: 6}, '2': {from: 6, to: 7}, '3': {from: 5, to: 7}}
+        ]
+      };
+      const [merge, continueFrom] = mergeAtLine(1, 6, syncData);
+      expect(merge).toEqual(
+        {'1': {from: 6, to: 7}, '2': {from: 7, to: 8}, '3': {from: 7, to: 8}}
+      );
+      expect(continueFrom).toEqual(1);
+    });
+
+  });
+
 });

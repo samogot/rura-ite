@@ -197,31 +197,57 @@ function computeOffsets(state) {
 
   for (const textSet of state.syncData.alignedTextSets) {
     let minViewport = Infinity, maxViewport = 0;
+    let minViewportId, maxViewportId;
     const extraOffsets = {};
     for (let id of textSet) {
-      minViewport = Math.min(maxViewport, prevState(id).viewport.from);
-      maxViewport = Math.max(maxViewport, Math.min(prevState(id).heights.length - 1, prevState(id).viewport.to));
+      const minTemp = mergeAtLine(id, prevState(id).viewport.from, state.syncData)[0][id].from;
+      if (minViewport > minTemp) {
+        minViewport = minTemp;
+        minViewportId = id;
+      }
+      const maxTemp = Math.min(prevState(id).heights.length - 1, mergeAtLine(id, prevState(id).viewport.to, state.syncData)[0][id].from);
+      if (maxViewport < maxTemp) {
+        maxViewport = maxTemp;
+        maxViewportId = id;
+      }
     }
     for (let id of textSet) {
       resultOffsets[id] = {offsets: prevState(id).offsets.slice(), minViewport, maxViewport};
       extraOffsets[id] = 0;
     }
-    for (let line = minViewport; line < maxViewport; ++line) {
-      let maxLineHeight = 0;
+    let line = minViewport;
+    let contFrom = 0;
+    let merge;
+    while (line < maxViewport) {
+      [merge, contFrom] = mergeAtLine(minViewportId, line, state.syncData, contFrom);
+      const mergeHeights = {};
       for (let id of textSet) {
-        if (prevLineExists(id, line)) {
-          maxLineHeight = Math.max(maxLineHeight, prevLineTrueHeight(id, line));
+        mergeHeights[id] = 0;
+      }
+      let maxMergeHeight = 0;
+      for (let id of textSet) {
+        for (let l = merge[id].from; l < merge[id].to; ++l) {
+          if (prevLineExists(id, l)) {
+            mergeHeights[id] += prevLineTrueHeight(id, l);
+          }
         }
+        maxMergeHeight = Math.max(maxMergeHeight, mergeHeights[id]);
       }
       for (let id of textSet) {
-        if (prevLineExists(id, line)) {
+        for (let l = merge[id].from; l < merge[id].to - 1; ++l) {
+          if (prevLineExists(id, l)) {
+            resultOffsets[id].offsets[l] = 0;
+          }
+        }
+        if (prevLineExists(id, merge[id].to - 1)) {
           //resultOffset
-          resultOffsets[id].offsets[line] = maxLineHeight - prevLineTrueHeight(id, line);
+          resultOffsets[id].offsets[merge[id].to - 1] = maxMergeHeight - mergeHeights[id];
         }
         else {
-          extraOffsets[id] += maxLineHeight;
+          extraOffsets[id] += maxMergeHeight;
         }
       }
+      line = merge[minViewportId].to;
     }
     for (let id of textSet) {
       if (extraOffsets[id]) {

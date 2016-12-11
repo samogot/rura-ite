@@ -30,7 +30,11 @@ const enhancer = composeEnhancers(
   applyMiddleware(
     reduxThunk,
     reduxMulti,
-    createLogger({collapsed: true, diff: true, trace: true}),
+    createLogger({
+      collapsed: true,
+      diff: true,
+      // trace: true
+    }),
   ),
 
 
@@ -94,34 +98,6 @@ if (!preloadedState) {
       }
     }));
   }
-  store.dispatch(textsDataActions.saveSourceMerges(1, [
-    {
-      srcFrom: 1,
-      srcTo: 2,
-      dstFrom: 1,
-      dstTo: 3,
-    },
-    {
-      srcFrom: 6,
-      srcTo: 8,
-      dstFrom: 7,
-      dstTo: 8,
-    },
-  ]));
-  store.dispatch(textsDataActions.saveSourceMerges(3, [
-    {
-      srcFrom: 4,
-      srcTo: 6,
-      dstFrom: 4,
-      dstTo: 5,
-    },
-    {
-      srcFrom: 7,
-      srcTo: 8,
-      dstFrom: 6,
-      dstTo: 8,
-    },
-  ]));
   store.dispatch(textsViewActions.selectActiveChapter(1));
   store.dispatch(layoutViewActions.saveLayout({
     content: [{

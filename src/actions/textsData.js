@@ -16,3 +16,11 @@ export function addText(data) {
     data,
   }
 }
+
+export function saveSourceMerges(id, merges) {
+  return {
+    type: T.TEXTS_DATA.UPDATE,
+    id: id,
+    data: {sourceMerges: merges},
+  }
+}

@@ -9,7 +9,8 @@
   "scripts": {
     "start": "gulp serve",
     "open": "gulp open",
-    "gulp": "gulp"
+    "gulp": "gulp",
+    "test": "mocha --compilers js:babel-core/register"
   },
   "devDependencies": {
     "autoprefixer-loader": "^3.2.0",
@@ -22,6 +23,7 @@
     "babel-register": "^6.1.4",
     "css-loader": "^0.23.1",
     "del": "^2.2.0",
+    "expect": "^1.20.2",
     "extract-text-webpack-plugin": "^1.0.1",
     "file-loader": "^0.8.4",
     "fill-range": "^2.2.2",
@@ -33,6 +35,7 @@
     "gulp-size": "^2.0.0",
     "gulp-util": "^3.0.5",
     "json-loader": "^0.5.3",
+    "mocha": "^3.2.0",
     "node-libs-browser": "^1.0.0",
     "open": "0.0.5",
     "redux-devtools": "^3.1.1",
@@ -50,9 +53,11 @@
     "golden-layout": "github:samogot/golden-layout",
     "invariant": "^2.1.1",
     "lodash.debounce": "^4.0.8",
+    "lodash.invert": "^4.3.0",
     "lodash.isequal": "^4.4.0",
     "lodash.throttle": "^4.1.1",
     "lorem-ipsum": "^1.0.3",
+    "lorem-ipsum-japanese": "^1.0.1",
     "react": "^0.14.0",
     "react-dom": "^0.14.0",
     "react-modal": "^1.6.1",
@@ -62,6 +67,8 @@
     "redux-logger": "^2.7.4",
     "redux-multi": "0.1.12",
     "redux-thunk": "^1.0.0",
+    "translit": "0.0.1",
+    "translit-russian": "0.0.2",
     "uniloc": "^0.2.0"
   }
 }

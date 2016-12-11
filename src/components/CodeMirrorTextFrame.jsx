@@ -25,6 +25,9 @@ class CodeMirrorTextFrame extends React.Component {
     this.onScroll = throttle(this.onScroll.bind(this), 16);
     this.onResize = debounce(this.onResize.bind(this), 50);
     this.onWheel = this.onWheel.bind(this);
+    this.onGutterDragStart = this.onGutterDragStart.bind(this);
+    this.onGutterDragOver = this.onGutterDragOver.bind(this);
+    this.onGutterDrop = this.onGutterDrop.bind(this);
     this.lastScrollSet = 0;
     this.lastTextSet = 0;
     this.alignMarks = [];
@@ -52,6 +55,12 @@ class CodeMirrorTextFrame extends React.Component {
     this.cm.on("scroll", this.onScroll);
     this.cm.on("viewportChange", this.onHeightChange);
     this.cm.display.wrapper.addEventListener("wheel", this.onWheel);
+    this.cm.display.gutters.draggable = true;
+    this.cm.on('dragover', this.onCMDragOver);
+    this.cm.display.gutters.addEventListener('dragstart', this.onGutterDragStart);
+    this.cm.display.gutters.addEventListener('dragover', this.onGutterDragOver);
+    this.cm.display.gutters.addEventListener('drop', this.onGutterDrop);
+    this.cm.display.gutters.addEventListener('mousedown', this.onGutterMouseDown);
     this.componentDidUpdate({scrollTop: 0, text: '', offsets: []});
     if (!this.props.glContainer.isHidden && this.props.chapter.text == this.props.textId) {
       window.cm = this.cm;
@@ -71,6 +80,46 @@ class CodeMirrorTextFrame extends React.Component {
     this.cm.off("viewportChange", this.onHeightChange);
     this.cm.display.wrapper.removeEventListener("wheel", this.onWheel);
     this.cm.toTextArea();
+  }
+
+  onGutterDragStart(e) {
+    const line = this.cm.lineAtHeight(e.screenY, 'window');
+    e.dataTransfer.setData("application/x-ite-line-number+plain", line);
+    e.stopPropagation();
+  }
+
+  onGutterDragOver(e) {
+    try {
+      if (e.dataTransfer.getData("application/x-ite-line-number+plain")) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    }
+    catch (er) {}
+  }
+
+  onCMDragOver(e) {
+    try {
+      if (e.dataTransfer.getData("application/x-ite-line-number+plain")) {
+        e.codemirrorIgnore = true;
+      }
+    }
+    catch (er) {}
+  }
+
+  onGutterMouseDown(e) {
+    e.stopPropagation();
+  }
+
+  onGutterDrop(e) {
+    const data = e.dataTransfer.getData("application/x-ite-line-number+plain");
+    if (data) {
+      const line = this.cm.lineAtHeight(e.screenY, 'window');
+      console.log({current: line, source: data});
+      e.preventDefault();
+      e.stopPropagation();
+    }
+
   }
 
   render() {

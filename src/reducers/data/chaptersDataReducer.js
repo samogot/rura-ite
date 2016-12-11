@@ -5,6 +5,7 @@ import ACTION_TYPES from '../../constants/ACTION_TYPES';
 const defaultItem = {
   id: 0,
   text: 0,
+  mainLang: '',
   langs: {}
 };
 

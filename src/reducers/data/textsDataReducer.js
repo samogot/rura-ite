@@ -5,16 +5,25 @@ import ACTION_TYPES from '../../constants/ACTION_TYPES';
 
 const defaultItem = {
   id: 0,
-  wiki: ''
+  wiki: '',
+  sourceMerges: [],
 };
+
 
 const oneItemReducer = typeReducers(ACTION_TYPES.TEXTS_DATA, defaultItem, {
   UPDATE: (state, {data}) => ({
     ...state,
     ...data,
   }),
-  ADD: (state, {data}) => (data),
-  REMOVE: () => null
+  ADD: (state, {data}) => ({
+    ...defaultItem,
+    ...data,
+  }),
+  REMOVE: () => null,
+  ADD_MERGE: (state, {merge}) => ({
+    ...state,
+    sourceMerges: [...state.sourceMerges, merge].sort((a, b) => b.srcFrom - a.srcFrom),
+  }),
 });
 
 const defaultState = {};

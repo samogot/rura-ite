@@ -15,7 +15,12 @@ import * as textsDataActions from './actions/textsData';
 import * as chaptersDataActions from './actions/chaptersData';
 import * as textsViewActions from './actions/textsView';
 import lorem from 'lorem-ipsum';
+import loremJapanese from 'lorem-ipsum-japanese';
 import VERSION from './constants/VERSION';
+import translit from 'translit';
+import translitRussian from 'translit-russian';
+import invert from 'lodash.invert';
+const translitReverse = translit({...invert(translitRussian), 'Q': 'Ку', 'q': 'ку'});
 
 const composeEnhancers = process.env.NODE_ENV !== 'production' && window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__
   ? window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__ : compose;
@@ -60,21 +65,63 @@ store.subscribe(function () {
 
 if (!preloadedState) {
   for (let i = 1; i < 7; ++i) {
+    let text;
+    switch ((i - 1) % 3) {
+      case 2:
+        text = lorem({count: 20 + i, units: 'paragraphs'});
+        break;
+      case 1:
+        text = loremJapanese({count: 20 + i, units: 'paragraphs'});
+        break;
+      case 0:
+        text = lorem({count: 20 + i, units: 'paragraphs'});
+        text = translitReverse(text);
+        break;
+    }
     store.dispatch(textsDataActions.addText({
       id: i,
-      wiki: lorem({count: 20 + i, units: 'paragraphs'}).replace(/\n\n/g, '\n')
+      wiki: text.replace(/\n\n/g, '\n')
     }));
   }
   for (let i = 1; i < 3; ++i) {
     store.dispatch(chaptersDataActions.addChapter({
       id: i,
       text: 1 + (i - 1) * 3,
+      mainLang: 'ru',
       langs: {
         jp: 2 + (i - 1) * 3,
         en: 3 + (i - 1) * 3,
       }
     }));
   }
+  store.dispatch(textsDataActions.saveSourceMerges(1, [
+    {
+      srcFrom: 1,
+      srcTo: 2,
+      dstFrom: 1,
+      dstTo: 3,
+    },
+    {
+      srcFrom: 6,
+      srcTo: 8,
+      dstFrom: 7,
+      dstTo: 8,
+    },
+  ]));
+  store.dispatch(textsDataActions.saveSourceMerges(3, [
+    {
+      srcFrom: 4,
+      srcTo: 6,
+      dstFrom: 4,
+      dstTo: 5,
+    },
+    {
+      srcFrom: 7,
+      srcTo: 8,
+      dstFrom: 6,
+      dstTo: 8,
+    },
+  ]));
   store.dispatch(textsViewActions.selectActiveChapter(1));
   store.dispatch(layoutViewActions.saveLayout({
     content: [{

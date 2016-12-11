@@ -12,6 +12,12 @@ const defaultState = {
     wheelBehaviour: SCROLL_CONFIG.WHEEL_BEHAVIOUR.DEFAULT,
     wheelAmount: 1,
   },
+  srcLang: {
+    jp: null,
+    en: 'jp',
+    cn: 'jp',
+    ru: 'en',
+  },
 };
 
 

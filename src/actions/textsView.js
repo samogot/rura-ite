@@ -3,10 +3,13 @@ import debounce from 'lodash.debounce';
 
 
 export function selectActiveChapter(id) {
-  return {
-    type: T.TEXTS_VIEW.SELECT_CHAPTER,
-    chapter: id
-  }
+  return [
+    {
+      type: T.TEXTS_VIEW.SELECT_CHAPTER,
+      chapter: id
+    },
+    recalcSyncedTexts(),
+  ]
 }
 
 export function selectActiveChapterWithDelay(id) {
@@ -56,14 +59,14 @@ export function updateAllHeights(id, viewport, heights, scrollInfo) {
 
 export function syncScroll(id) {
   return {
-    type: T.TEXTS_VIEW.SYNC_SCROLL,
+    type: T.TEXTS_VIEW.SCROLL_SYNC,
     id,
   }
 }
 
 export function setScrollOnly(id, scrollTop) {
   return {
-    type: T.TEXTS_VIEW.SET_SCROLL,
+    type: T.TEXTS_VIEW.SCROLL_SET,
     id,
     scrollTop,
   }
@@ -105,5 +108,32 @@ export function scrollParagraph(id, ammount) {
   return [
     scrollParagraphOnly(id, ammount),
     syncScroll(id),
+  ];
+}
+
+export function recalcSyncedTexts() {
+  return [
+    {
+      type: T.TEXTS_VIEW.RECALC_SYNCED_TEXTS
+    },
+    ...recalcAlignedTextSets(),
+    ...recalcLineMerges(),
+  ];
+
+}
+export function recalcAlignedTextSets() {
+  return [
+    {
+      type: T.TEXTS_VIEW.RECALC_ALIGNED_TEXT_SETS
+    },
+    updateOffsetsDebounce
+  ];
+}
+export function recalcLineMerges() {
+  return [
+    {
+      type: T.TEXTS_VIEW.RECALC_LINE_MERGES
+    },
+    updateOffsetsDebounce
   ];
 }

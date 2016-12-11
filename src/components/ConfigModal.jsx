@@ -27,12 +27,12 @@ class ConfigModal extends React.Component {
     }
 
     this.props.saveScrollConfig({syncTexts});
-    this.props.updateOffsets();
+    this.props.recalcSyncedTexts();
   }
 
   alignLinesChanged() {
     this.props.saveScrollConfig({alignLines: this.refs.alignLines.value});
-    this.props.updateOffsets();
+    this.props.recalcAlignedTextSets();
   }
 
   scrollAnchorChanged() {

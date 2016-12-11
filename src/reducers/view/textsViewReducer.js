@@ -133,7 +133,8 @@ function computeTargetScrollPositions(state, sourceId, scrollTop, targets, scrol
     sourceAnchorPosition = scrollConfig.scrollAnchor * scrollInfo.clientHeight,
     midY = scrollTop + sourceAnchorPosition;
   const midLine = lineAtHeight(midY, state[sourceId]);
-  const sourceOffset = {top: sourceHeights[midLine], bot: sourceHeights[midLine + 1]};
+  const [merge] = mergeAtLine(sourceId, midLine, state.syncData);
+  const sourceOffset = {top: sourceHeights[merge[sourceId].from], bot: sourceHeights[merge[sourceId].to]};
   const ratio = (midY - sourceOffset.top) / (sourceOffset.bot - sourceOffset.top);
   // const log = []
   for (let targetId of targets) {
@@ -148,7 +149,10 @@ function computeTargetScrollPositions(state, sourceId, scrollTop, targets, scrol
     else {
       const targetAnchorPosition = scrollConfig.scrollAnchor * targetScrollInfo.clientHeight;
       const targetMax = targetHeights[targetHeights.length - 1];
-      const targetOffset = {top: targetHeights[midLine] || targetMax, bot: targetHeights[midLine + 1] || targetMax};
+      const targetOffset = {
+        top: targetHeights[merge[targetId].from] || targetMax,
+        bot: targetHeights[merge[targetId].to] || targetMax
+      };
       targetPos = (targetOffset.top - targetAnchorPosition) + ratio * (targetOffset.bot - targetOffset.top);
       // log.push(targetId)
       // log.push(targetPos)

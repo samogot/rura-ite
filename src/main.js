@@ -150,10 +150,10 @@ bindShortcuts(
   [['alt+up'], actions.unmergeNextLine, true],
   [['alt+left'], actions.disuniteNextLine, true],
   [['alt+right'], actions.unitNextLine, true],
-  [['alt alt+down'], actions.mergeNextSrcLine, true],
-  [['alt alt+up'], actions.unmergeNextSrcLine, true],
-  [['alt alt+left'], actions.disuniteNextSrcLine, true],
-  [['alt alt+right'], actions.unitNextSrcLine, true],
+  [['shift+alt+down'], actions.mergeNextSrcLine, true],
+  [['shift+alt+up'], actions.unmergeNextSrcLine, true],
+  [['shift+alt+left'], actions.disuniteNextSrcLine, true],
+  [['shift+alt+right'], actions.unitNextSrcLine, true],
 )(store.dispatch);
 mousetrap.stopCallback = () => false;
 

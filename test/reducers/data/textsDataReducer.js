@@ -25,7 +25,7 @@ describe('textsDataReducer', () => {
             },
           }
         }
-      }, {type: '@@ite/TEXTS_DATA/MERGE_NEXT_SRC_LINE'});
+      }, {type: '@@ite/TEXTS_DATA/MERGE_NEXT_LINE'});
       expect(state.data.texts[1].sourceMerges).toEqual([
         {srcFrom: 1, srcTo: 2, dstFrom: 1, dstTo: 3}
       ]);
@@ -52,7 +52,7 @@ describe('textsDataReducer', () => {
             },
           }
         }
-      }, {type: '@@ite/TEXTS_DATA/MERGE_NEXT_SRC_LINE'});
+      }, {type: '@@ite/TEXTS_DATA/MERGE_NEXT_LINE'});
       expect(state.data.texts[1].sourceMerges).toEqual([
         {srcFrom: 0, srcTo: 1, dstFrom: 0, dstTo: 2},
         {srcFrom: 2, srcTo: 3, dstFrom: 3, dstTo: 5},
@@ -80,7 +80,7 @@ describe('textsDataReducer', () => {
             },
           }
         }
-      }, {type: '@@ite/TEXTS_DATA/MERGE_NEXT_SRC_LINE'});
+      }, {type: '@@ite/TEXTS_DATA/MERGE_NEXT_LINE'});
       expect(state.data.texts[1].sourceMerges).toEqual([
         {srcFrom: 2, srcTo: 3, dstFrom: 2, dstTo: 4},
         {srcFrom: 4, srcTo: 5, dstFrom: 5, dstTo: 7},
@@ -109,7 +109,7 @@ describe('textsDataReducer', () => {
             },
           }
         }
-      }, {type: '@@ite/TEXTS_DATA/MERGE_NEXT_SRC_LINE'});
+      }, {type: '@@ite/TEXTS_DATA/MERGE_NEXT_LINE'});
       expect(state.data.texts[1].sourceMerges).toEqual([
         {srcFrom: 2, srcTo: 3, dstFrom: 2, dstTo: 4},
         {srcFrom: 4, srcTo: 5, dstFrom: 5, dstTo: 7},
@@ -138,7 +138,7 @@ describe('textsDataReducer', () => {
             },
           }
         }
-      }, {type: '@@ite/TEXTS_DATA/MERGE_NEXT_SRC_LINE'});
+      }, {type: '@@ite/TEXTS_DATA/MERGE_NEXT_LINE'});
       expect(state.data.texts[1].sourceMerges).toEqual([
         {srcFrom: 2, srcTo: 3, dstFrom: 2, dstTo: 5},
       ]);

@@ -33,7 +33,13 @@ function getCurTextId(fullState) {
 }
 
 function getCurSrcTextId(fullState) {
-  return fullState.view.texts.focusedText;
+  const curText = getCurTextId(fullState);
+  for (let [l,id] of Object.entries(fullState.view.texts.syncData.syncedTexts)) {
+    if (id == curText) {
+      return fullState.view.texts.syncData.syncedTexts[fullState.data.config.srcLang[l]];
+    }
+  }
+  return undefined
 }
 
 function getSourceMergesReducer(getId, getSourceMerges) {

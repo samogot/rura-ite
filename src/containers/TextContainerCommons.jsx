@@ -10,6 +10,7 @@ export function mapStateToProps(state, ownProps, textId) {
     text: state.data.texts[textId].wiki,
     scrollTop: textView.scrollInfo.top || 0,
     offsets: textView.offsets || [],
+    selections: textView.selections || [],
     glContainer: ownProps.glContainer,
     wheelBehaviour: state.data.config.scroll.wheelBehaviour,
     wheelAmount: state.data.config.scroll.wheelAmount,

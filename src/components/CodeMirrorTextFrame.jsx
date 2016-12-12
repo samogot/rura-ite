@@ -6,6 +6,7 @@ import CodeMirror from 'codemirror';
 import {pacomoDecorator} from '../utils/pacomo';
 import throttle from 'lodash.throttle';
 import debounce from 'lodash.debounce';
+import isequal from 'lodash.isequal';
 import SCROLL_CONFIG from '../constants/SCROLL_CONFIG';
 
 function normalizeLineEndings(str) {
@@ -25,11 +26,13 @@ class CodeMirrorTextFrame extends React.Component {
     this.onScroll = throttle(this.onScroll.bind(this), 16);
     this.onResize = debounce(this.onResize.bind(this), 50);
     this.onWheel = this.onWheel.bind(this);
-    this.onGutterDragStart = this.onGutterDragStart.bind(this);
-    this.onGutterDragOver = this.onGutterDragOver.bind(this);
-    this.onGutterDrop = this.onGutterDrop.bind(this);
+    this.onCursorActivity = debounce(this.onCursorActivity.bind(this), 200);
+    // this.onGutterDragStart = this.onGutterDragStart.bind(this);
+    // this.onGutterDragOver = this.onGutterDragOver.bind(this);
+    // this.onGutterDrop = this.onGutterDrop.bind(this);
     this.lastScrollSet = 0;
     this.lastTextSet = 0;
+    this.lastSelectionsSet = 0;
     this.alignMarks = [];
   }
 
@@ -39,7 +42,7 @@ class CodeMirrorTextFrame extends React.Component {
       matchBrackets: true,
       lineWrapping: true,
       styleActiveLine: true,
-      scrollbarStyle: 'native',
+      lineWiseCopyCut: false,
       mode: "mediawiki",
     };
 
@@ -54,14 +57,15 @@ class CodeMirrorTextFrame extends React.Component {
     this.cm.on("change", this.onHeightChange);
     this.cm.on("scroll", this.onScroll);
     this.cm.on("viewportChange", this.onHeightChange);
+    this.cm.on("cursorActivity", this.onCursorActivity);
     this.cm.display.wrapper.addEventListener("wheel", this.onWheel);
-    this.cm.display.gutters.draggable = true;
-    this.cm.on('dragover', this.onCMDragOver);
-    this.cm.display.gutters.addEventListener('dragstart', this.onGutterDragStart);
-    this.cm.display.gutters.addEventListener('dragover', this.onGutterDragOver);
-    this.cm.display.gutters.addEventListener('drop', this.onGutterDrop);
-    this.cm.display.gutters.addEventListener('mousedown', this.onGutterMouseDown);
-    this.componentDidUpdate({scrollTop: 0, text: '', offsets: []});
+    // this.cm.display.gutters.draggable = true;
+    // this.cm.on('dragover', this.onCMDragOver);
+    // this.cm.display.gutters.addEventListener('dragstart', this.onGutterDragStart);
+    // this.cm.display.gutters.addEventListener('dragover', this.onGutterDragOver);
+    // this.cm.display.gutters.addEventListener('drop', this.onGutterDrop);
+    // this.cm.display.gutters.addEventListener('mousedown', this.onGutterMouseDown);
+    this.componentDidUpdate({scrollTop: 0, text: '', offsets: [], selections: []});
     if (!this.props.glContainer.isHidden && this.props.chapter.text == this.props.textId) {
       window.cm = this.cm;
     }
@@ -78,49 +82,50 @@ class CodeMirrorTextFrame extends React.Component {
     this.cm.off("change", this.onHeightChange);
     this.cm.off("scroll", this.onScroll);
     this.cm.off("viewportChange", this.onHeightChange);
+    this.cm.off("cursorActivity", this.onCursorActivity);
     this.cm.display.wrapper.removeEventListener("wheel", this.onWheel);
     this.cm.toTextArea();
   }
 
-  onGutterDragStart(e) {
-    const line = this.cm.lineAtHeight(e.screenY, 'window');
-    e.dataTransfer.setData("application/x-ite-line-number+plain", line);
-    e.stopPropagation();
-  }
-
-  onGutterDragOver(e) {
-    try {
-      if (e.dataTransfer.getData("application/x-ite-line-number+plain")) {
-        e.preventDefault();
-        e.stopPropagation();
-      }
-    }
-    catch (er) {}
-  }
-
-  onCMDragOver(e) {
-    try {
-      if (e.dataTransfer.getData("application/x-ite-line-number+plain")) {
-        e.codemirrorIgnore = true;
-      }
-    }
-    catch (er) {}
-  }
-
-  onGutterMouseDown(e) {
-    e.stopPropagation();
-  }
-
-  onGutterDrop(e) {
-    const data = e.dataTransfer.getData("application/x-ite-line-number+plain");
-    if (data) {
-      const line = this.cm.lineAtHeight(e.screenY, 'window');
-      console.log({current: line, source: data});
-      e.preventDefault();
-      e.stopPropagation();
-    }
-
-  }
+  // onGutterDragStart(e) {
+  //   const line = this.cm.lineAtHeight(e.screenY, 'window');
+  //   e.dataTransfer.setData("application/x-ite-line-number+plain", line);
+  //   e.stopPropagation();
+  // }
+  //
+  // onGutterDragOver(e) {
+  //   try {
+  //     if (e.dataTransfer.getData("application/x-ite-line-number+plain")) {
+  //       e.preventDefault();
+  //       e.stopPropagation();
+  //     }
+  //   }
+  //   catch (er) {}
+  // }
+  //
+  // onCMDragOver(e) {
+  //   try {
+  //     if (e.dataTransfer.getData("application/x-ite-line-number+plain")) {
+  //       e.codemirrorIgnore = true;
+  //     }
+  //   }
+  //   catch (er) {}
+  // }
+  //
+  // onGutterMouseDown(e) {
+  //   e.stopPropagation();
+  // }
+  //
+  // onGutterDrop(e) {
+  //   const data = e.dataTransfer.getData("application/x-ite-line-number+plain");
+  //   if (data) {
+  //     const line = this.cm.lineAtHeight(e.screenY, 'window');
+  //     console.log({current: line, source: data});
+  //     e.preventDefault();
+  //     e.stopPropagation();
+  //   }
+  //
+  // }
 
   render() {
     return <div><textarea ref="textarea" autoComplete="off"/></div>;
@@ -135,6 +140,10 @@ class CodeMirrorTextFrame extends React.Component {
     if (this.cm.getScrollInfo().top != this.props.scrollTop) {
       this.lastScrollSet = +new Date;
       this.cm.scrollTo(null, this.props.scrollTop);
+    }
+    if (!isequal(this.cm.listSelections(), this.props.selections)) {
+      this.lastSelectionsSet = +new Date;
+      this.cm.setSelections(this.props.selections);
     }
     if (this.props.offsets != prevProps.offsets) {
       // console.log(this.alignMarks);
@@ -165,14 +174,17 @@ class CodeMirrorTextFrame extends React.Component {
 
   onShow() {
     if (this.props.chapter.text == this.props.textId) {
-      this.props.selectActiveChapterWithDelay(this.props.chapter.id);
+      this.props.selectActiveChapterDebounce(this.props.chapter.id);
     }
+    this.props.selectActiveTextDebounce(this.props.textId);
   }
 
-  onFocus(id) {
+  onFocus() {
+    this.onCursorActivity.flush();
     if (this.props.chapter.text == this.props.textId) {
       this.props.selectActiveChapter(this.props.chapter.id);
     }
+    this.props.selectActiveTextDebounce(this.props.textId);
   }
 
   onChange() {
@@ -224,6 +236,12 @@ class CodeMirrorTextFrame extends React.Component {
     // console.log('onScroll', this.props.textId, this.lastScrollSet, now - this.lastScrollSet);
     if (this.lastScrollSet + 250 > now) return false;
     this.props.setScroll(this.props.textId, this.cm.getScrollInfo().top);
+  }
+
+  onCursorActivity() {
+    const now = +new Date;
+    if (this.lastSelectionsSet + 250 > now) return false;
+    this.props.updateSelections(this.props.textId, this.cm.listSelections());
   }
 
   onResize() {

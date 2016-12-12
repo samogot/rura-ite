@@ -12,8 +12,23 @@ export function selectActiveChapter(id) {
   ]
 }
 
-export function selectActiveChapterWithDelay(id) {
-  return dispatch => setTimeout(() => dispatch(selectActiveChapter(id)), 0)
+const selectActiveChapterDebounced = debounce((id, dispatch) => dispatch(selectActiveChapter(id)), 0);
+
+export function selectActiveChapterDebounce(id) {
+  return selectActiveChapterDebounced.bind(undefined, id);
+}
+
+export function selectActiveText(id) {
+  return {
+    type: T.TEXTS_VIEW.SELECT_TEXT,
+    text: id
+  };
+}
+
+const selectActiveTextDebounced = debounce((id, dispatch) => dispatch(selectActiveText(id)), 0);
+
+export function selectActiveTextDebounce(id) {
+  return selectActiveTextDebounced.bind(undefined, id);
 }
 
 export function updateLinesHeightsOnly(id, viewport, heights, fullHeight) {
@@ -34,18 +49,33 @@ export function updateClientHeight(id, clientHeight) {
   }
 }
 
-export function updateOffsets() {
+export function updateSelections(id, selections) {
+  return [
+    {
+      type: T.TEXTS_VIEW.UPDATE_SELECTIONS,
+      id,
+      selections,
+    },
+    syncSelections(id),
+  ]
+}
+
+export function recalcOffsets() {
   return {
-    type: T.TEXTS_VIEW.UPDATE_OFFSETS
+    type: T.TEXTS_VIEW.RECALC_OFFSETS
   }
 }
 
-export const updateOffsetsDebounce = debounce(dispatch => dispatch(updateOffsets()), 100);
+const recalcOffsetsDebounced = debounce(dispatch => dispatch(recalcOffsets()), 100);
+
+export function recalcOffsetsDebounce() {
+  return recalcOffsetsDebounced;
+}
 
 export function updateLinesHeights(id, viewport, heights, fullHeight) {
   return [
     updateLinesHeightsOnly(id, viewport, heights, fullHeight),
-    updateOffsetsDebounce,
+    recalcOffsetsDebounce(),
   ]
 }
 
@@ -53,13 +83,20 @@ export function updateAllHeights(id, viewport, heights, scrollInfo) {
   return [
     updateClientHeight(id, scrollInfo.clientHeight),
     updateLinesHeightsOnly(id, viewport, heights, scrollInfo.height),
-    updateOffsetsDebounce,
+    recalcOffsetsDebounce(),
   ]
 }
 
 export function syncScroll(id) {
   return {
-    type: T.TEXTS_VIEW.SCROLL_SYNC,
+    type: T.TEXTS_VIEW.SYNC_SCROLL,
+    id,
+  }
+}
+
+export function syncSelections(id) {
+  return {
+    type: T.TEXTS_VIEW.SYNC_SELECTIONS,
     id,
   }
 }
@@ -126,7 +163,7 @@ export function recalcAlignedTextSets() {
     {
       type: T.TEXTS_VIEW.RECALC_ALIGNED_TEXT_SETS
     },
-    updateOffsetsDebounce
+    recalcOffsetsDebounce()
   ];
 }
 export function recalcLineMerges() {
@@ -134,6 +171,6 @@ export function recalcLineMerges() {
     {
       type: T.TEXTS_VIEW.RECALC_LINE_MERGES
     },
-    updateOffsetsDebounce
+    recalcOffsetsDebounce()
   ];
 }

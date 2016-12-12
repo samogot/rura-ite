@@ -1,4 +1,5 @@
 import T from '../constants/ACTION_TYPES';
+import {recalcLineMerges} from './textsView';
 
 
 export function saveText(id, text) {
@@ -6,7 +7,7 @@ export function saveText(id, text) {
     type: T.TEXTS_DATA.UPDATE,
     id: id,
     data: {wiki: text},
-  }
+  };
 }
 
 export function addText(data) {
@@ -14,7 +15,7 @@ export function addText(data) {
     type: T.TEXTS_DATA.ADD,
     id: data.id,
     data,
-  }
+  };
 }
 
 export function saveSourceMerges(id, merges) {
@@ -22,5 +23,77 @@ export function saveSourceMerges(id, merges) {
     type: T.TEXTS_DATA.UPDATE,
     id: id,
     data: {sourceMerges: merges},
-  }
+  };
+}
+
+export function mergeNextLine() {
+  return [
+    {
+      type: T.TEXTS_DATA.MERGE_NEXT_LINE,
+    },
+    recalcLineMerges(),
+  ];
+}
+
+export function unmergeNextLine() {
+  return [
+    {
+      type: T.TEXTS_DATA.UNMERGE_NEXT_LINE,
+    },
+    recalcLineMerges(),
+  ];
+}
+
+export function disuniteNextLine() {
+  return [
+    {
+      type: T.TEXTS_DATA.DISUNITE_NEXT_LINE,
+    },
+    recalcLineMerges(),
+  ];
+}
+
+export function unitNextLine() {
+  return [
+    {
+      type: T.TEXTS_DATA.UNIT_NEXT_LINE,
+    },
+    recalcLineMerges(),
+  ];
+}
+
+export function mergeNextSrcLine() {
+  return [
+    {
+      type: T.TEXTS_DATA.MERGE_NEXT_SRC_LINE,
+    },
+    recalcLineMerges(),
+  ];
+}
+
+export function unmergeNextSrcLine() {
+  return [
+    {
+      type: T.TEXTS_DATA.UNMERGE_NEXT_SRC_LINE,
+    },
+    recalcLineMerges(),
+  ];
+}
+
+export function disuniteNextSrcLine() {
+  return [
+    {
+      type: T.TEXTS_DATA.DISUNITE_NEXT_SRC_LINE,
+    },
+    recalcLineMerges(),
+  ];
+}
+
+export function unitNextSrcLine() {
+  return [
+    {
+      type: T.TEXTS_DATA.UNIT_NEXT_SRC_LINE,
+    },
+    recalcLineMerges(),
+  ];
 }

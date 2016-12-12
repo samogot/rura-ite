@@ -14,7 +14,11 @@ const defaultItem = {
   viewport: {
     from: 0,
     to: 0,
-  }
+  },
+  selections: [{
+    head: {line: 0, ch: 0},
+    anchor: {line: 0, ch: 0},
+  }],
 };
 
 const oneItemReducer = typeReducers(ACTION_TYPES.TEXTS_VIEW, defaultItem, {
@@ -38,6 +42,10 @@ const oneItemReducer = typeReducers(ACTION_TYPES.TEXTS_VIEW, defaultItem, {
       ...state.scrollInfo,
       clientHeight,
     },
+  }),
+  UPDATE_SELECTIONS: (state, {selections}) => ({
+    ...state,
+    selections,
   }),
   SCROLL_SET: (state, {scrollTop}) => ({
     ...state,
@@ -81,7 +89,8 @@ const defaultState = {
     syncedTexts: [],
     alignedTextSets: [],
     lineMerges: [],
-  }
+  },
+  focusedText: 0,
 };
 
 function lineAtHeight(height, {viewport, heights}) {
@@ -139,7 +148,7 @@ function computeTargetScrollPositions(state, sourceId, scrollTop, targets, scrol
   // const log = []
   for (let targetId of targets) {
     let targetPos;
-    const {scrollInfo: targetScrollInfo, heights: targetHeights} = state[targetId];
+    const {scrollInfo: targetScrollInfo, heights: targetHeights} = state[targetId] || defaultItem;
 
     //for aligned texts use simple computing
     if (state.syncData.alignedTextSets.some(set => set.includes(sourceId) && set.includes(targetId))) {
@@ -234,17 +243,13 @@ function computeOffsets(state) {
         maxMergeHeight = Math.max(maxMergeHeight, mergeHeights[id]);
       }
       for (let id of textSet) {
-        for (let l = merge[id].from; l < merge[id].to - 1; ++l) {
+        for (let l = merge[id].from; l < merge[id].to; ++l) {
           if (prevLineExists(id, l)) {
-            resultOffsets[id].offsets[l] = 0;
+            resultOffsets[id].offsets[l] = (maxMergeHeight - mergeHeights[id]) / (merge[id].to - merge[id].from);
           }
-        }
-        if (prevLineExists(id, merge[id].to - 1)) {
-          //resultOffset
-          resultOffsets[id].offsets[merge[id].to - 1] = maxMergeHeight - mergeHeights[id];
-        }
-        else {
-          extraOffsets[id] += maxMergeHeight;
+          else {
+            extraOffsets[id] += maxMergeHeight / (merge[id].to - merge[id].from);
+          }
         }
       }
       line = merge[minViewportId].to;
@@ -524,7 +529,11 @@ export default typeReducers(ACTION_TYPES.TEXTS_VIEW, defaultState, {
     ...state,
     activeChapter: chapter,
   }),
-  SCROLL_SYNC: (state, {id}, fullState) => {
+  SELECT_TEXT: (state, {text}) => ({
+    ...state,
+    focusedText: text,
+  }),
+  SYNC_SCROLL: (state, {id}, fullState) => {
     const scrollTop = state[id].scrollInfo.top;
     const targets = Object.entries(state.syncData.syncedTexts).map(([,t]) => t);
     if (!targets.includes(id)) return state;
@@ -535,6 +544,7 @@ export default typeReducers(ACTION_TYPES.TEXTS_VIEW, defaultState, {
       ...Object.entries(targetScrollTop).reduce((texts, [id,top]) => ({
         ...texts,
         [id]: {
+          ...defaultItem,
           ...state[id],
           scrollInfo: {
             ...state[id].scrollInfo,
@@ -544,7 +554,42 @@ export default typeReducers(ACTION_TYPES.TEXTS_VIEW, defaultState, {
       }), {}),
     }
   },
-  UPDATE_OFFSETS: (state, {}, fullState) => {
+  SYNC_SELECTIONS: (state, {id}) => {
+    if (state[id].selections.length > 1 || !Object.entries(state.syncData.syncedTexts).map(([,id]) => id).includes(id)
+        || state[id].selections[0].head.line != state[id].selections[0].anchor.line
+        || state[id].selections[0].head.ch != state[id].selections[0].anchor.ch) {
+      return state;
+    }
+    const [merge] = mergeAtLine(id, state[id].selections[0].head.line, state.syncData);
+    const ratio = (state[id].selections[0].head.line - merge[id].from) / (merge[id].to - merge[id].from);
+    return {
+      ...state,
+      ...Object.entries(state.syncData.syncedTexts).reduce((texts, [,targetId]) => {
+        let selections = [];
+        if (id == targetId || state[targetId].selections.length > 1
+            || state[targetId].selections[0].head.line != state[targetId].selections[0].anchor.line
+            || state[targetId].selections[0].head.ch != state[targetId].selections[0].anchor.ch) {
+          selections = state[targetId].selections;
+        }
+        else {
+          const targetLine = merge[targetId].from + Math.floor(ratio * (merge[targetId].to - merge[targetId].from));
+          selections = [{
+            anchor: {line: targetLine, ch: 0},
+            head: {line: targetLine, ch: 0},
+          }];
+        }
+        return {
+          ...texts,
+          [targetId]: {
+            ...defaultItem,
+            ...state[targetId],
+            selections,
+          },
+        }
+      }, {}),
+    };
+  },
+  RECALC_OFFSETS: (state, {}) => {
     const newOffsets = computeOffsets(state);
     for (let id in state) {
       if (state.hasOwnProperty(id) && typeof state[id] == 'object' && Number.isInteger(+id) && !newOffsets.hasOwnProperty(id)) {
@@ -556,6 +601,7 @@ export default typeReducers(ACTION_TYPES.TEXTS_VIEW, defaultState, {
       ...Object.entries(newOffsets).reduce((texts, [id,newTextState]) => ({
         ...texts,
         [id]: {
+          ...defaultItem,
           ...state[id],
           ...newTextState,
         },
@@ -585,6 +631,7 @@ export default typeReducers(ACTION_TYPES.TEXTS_VIEW, defaultState, {
   }),
   UPDATE_LINES_HEIGHTS: delegateReducerById(oneItemReducer),
   UPDATE_CLIENT_HEIGHT: delegateReducerById(oneItemReducer),
+  UPDATE_SELECTIONS: delegateReducerById(oneItemReducer),
   SCROLL_SET: delegateReducerById(oneItemReducer),
   SCROLL_LINE: delegateReducerById(oneItemReducer),
   SCROLL_PARAGRAPH: delegateReducerById(oneItemReducer),

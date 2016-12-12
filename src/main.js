@@ -12,11 +12,13 @@ import 'golden-layout/src/css/goldenlayout-base.css';
 import 'golden-layout/src/css/goldenlayout-light-theme.css';
 import * as layoutViewActions from './actions/layoutView';
 import * as textsDataActions from './actions/textsData';
+import * as actions from './actions/textsData';
 import * as chaptersDataActions from './actions/chaptersData';
 import * as textsViewActions from './actions/textsView';
 import lorem from 'lorem-ipsum';
 import loremJapanese from 'lorem-ipsum-japanese';
 import VERSION from './constants/VERSION';
+import {bindShortcuts, mousetrap} from 'redux-shortcuts';
 import translit from 'translit';
 import translitRussian from 'translit-russian';
 import invert from 'lodash.invert';
@@ -141,6 +143,19 @@ if (!preloadedState) {
   }));
 }
 
+
+bindShortcuts(
+  [['shift+enter'], actions.mergeNextLine],
+  [['alt+down'], actions.mergeNextLine, true],
+  [['alt+up'], actions.unmergeNextLine, true],
+  [['alt+left'], actions.disuniteNextLine, true],
+  [['alt+right'], actions.unitNextLine, true],
+  [['alt alt+down'], actions.mergeNextSrcLine, true],
+  [['alt alt+up'], actions.unmergeNextSrcLine, true],
+  [['alt alt+left'], actions.disuniteNextSrcLine, true],
+  [['alt alt+right'], actions.unitNextSrcLine, true],
+)(store.dispatch);
+mousetrap.stopCallback = () => false;
 
 const APP_NODE = document.getElementById('react-app');
 ReactDOM.render(

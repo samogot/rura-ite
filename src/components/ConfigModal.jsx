@@ -11,6 +11,8 @@ class ConfigModal extends React.Component {
     this.syncTextEdgesChanged = this.syncTextEdgesChanged.bind(this);
     this.wheelBehaviourChanged = this.wheelBehaviourChanged.bind(this);
     this.wheelAmountChanged = this.wheelAmountChanged.bind(this);
+    this.anchorSelectionChanged = this.anchorSelectionChanged.bind(this);
+    this.extraBottomHeightChanged = this.extraBottomHeightChanged.bind(this);
   }
 
   syncTextsChanged() {
@@ -66,6 +68,14 @@ class ConfigModal extends React.Component {
 
   wheelAmountChanged() {
     this.props.saveScrollConfig({wheelAmount: this.refs.wheelAmount.value})
+  }
+
+  anchorSelectionChanged() {
+    this.props.saveScrollConfig({anchorSelection: this.refs.anchorSelection.checked})
+  }
+
+  extraBottomHeightChanged() {
+    this.props.saveScrollConfig({extraBottomHeight: this.refs.extraBottomHeight.checked})
   }
 
   render() {
@@ -159,6 +169,20 @@ class ConfigModal extends React.Component {
             <option value={SCROLL_CONFIG.WHEEL_BEHAVIOUR.PARAGRAPH}>по абзацам</option>
           </select>
           <br/>{wheelBehaviour}
+        </div>
+        <div>
+          <label>
+            <input type="checkbox" onChange={this.anchorSelectionChanged} checked={this.props.anchorSelection}
+                   ref="anchorSelection"/>&nbsp;
+            Всегда держать текущий абзац в закрепленной позиции
+          </label>&nbsp;
+        </div>
+        <div>
+          <label>
+            <input type="checkbox" onChange={this.extraBottomHeightChanged} checked={this.props.extraBottomHeight}
+                   ref="extraBottomHeight"/>&nbsp;
+            Разрешать скролить ниже последних строк
+          </label>&nbsp;
         </div>
         <button onClick={this.props.onClose}>OK</button>
       </Model>

@@ -11,6 +11,8 @@ const defaultState = {
     syncTextEdges: false,
     wheelBehaviour: SCROLL_CONFIG.WHEEL_BEHAVIOUR.DEFAULT,
     wheelAmount: 1,
+    anchorSelection: false,
+    extraBottomHeight: false,
   },
   srcLang: {
     jp: null,

@@ -14,6 +14,7 @@ export function mapStateToProps(state, ownProps, textId) {
     glContainer: ownProps.glContainer,
     wheelBehaviour: state.data.config.scroll.wheelBehaviour,
     wheelAmount: state.data.config.scroll.wheelAmount,
+    anchorSelection: state.data.config.scroll.anchorSelection,
   };
 }
 

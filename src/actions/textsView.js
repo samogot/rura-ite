@@ -148,6 +148,20 @@ export function scrollParagraph(id, ammount) {
   ];
 }
 
+export function scrollToSellectionOnly(id) {
+  return {
+    type: T.TEXTS_VIEW.SCROLL_TO_SELECTION,
+    id,
+  }
+}
+
+export function scrollToSellection(id) {
+  return [
+    scrollToSellectionOnly(id),
+    syncScroll(id),
+  ];
+}
+
 export function recalcSyncedTexts() {
   return [
     {

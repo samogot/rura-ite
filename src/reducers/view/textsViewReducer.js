@@ -80,6 +80,21 @@ const oneItemReducer = typeReducers(ACTION_TYPES.TEXTS_VIEW, defaultItem, {
       },
     }
   },
+  SCROLL_TO_SELECTION: (state, {}, fullState) => {
+    const scrollAnchor = fullState.data.config.scroll.scrollAnchor;
+    const line = state.selections[0].head.line;
+    const screenAnchor = scrollAnchor * state.scrollInfo.clientHeight;
+    const lineAnchor = scrollAnchor * (state.heights[line + 1] - state.heights[line]) + state.heights[line];
+    let newScrollTop = lineAnchor - screenAnchor;
+    newScrollTop = Math.min(Math.max(newScrollTop, 0), state.scrollInfo.height - state.scrollInfo.clientHeight);
+    return {
+      ...state,
+      scrollInfo: {
+        ...state.scrollInfo,
+        top: newScrollTop,
+      },
+    }
+  },
 });
 
 
@@ -255,7 +270,7 @@ function computeOffsets(state) {
       line = merge[minViewportId].to;
     }
     for (let id of textSet) {
-      if (extraOffsets[id]) {
+      if (extraOffsets[id] && state[id].heights[state[id].heights.length - 1] >= state[id].scrollInfo.height - 10) {
         resultOffsets[id].offsets[resultOffsets[id].offsets.length - 1] += extraOffsets[id];
       }
     }
@@ -589,7 +604,7 @@ export default typeReducers(ACTION_TYPES.TEXTS_VIEW, defaultState, {
       }, {}),
     };
   },
-  RECALC_OFFSETS: (state, {}) => {
+  RECALC_OFFSETS: (state, {}, fullState) => {
     const newOffsets = computeOffsets(state);
     for (let id in state) {
       if (state.hasOwnProperty(id) && typeof state[id] == 'object' && Number.isInteger(+id) && !newOffsets.hasOwnProperty(id)) {
@@ -598,14 +613,24 @@ export default typeReducers(ACTION_TYPES.TEXTS_VIEW, defaultState, {
     }
     return {
       ...state,
-      ...Object.entries(newOffsets).reduce((texts, [id,newTextState]) => ({
-        ...texts,
-        [id]: {
-          ...defaultItem,
-          ...state[id],
-          ...newTextState,
-        },
-      }), {}),
+      ...Object.entries(newOffsets).reduce((texts, [id,newTextState]) => {
+        if (fullState.data.config.scroll.extraBottomHeight && state[id].heights[state[id].heights.length - 1] >= state[id].scrollInfo.height - 10) {
+          newTextState.offsets[state[id].heights.length - 2] = newTextState.offsets[state[id].heights.length - 2] || 0;
+          newTextState.offsets[state[id].heights.length - 2] += state[id].scrollInfo.clientHeight;
+          newTextState.heights = newTextState.heights || [...state[id].heights.length];
+          newTextState.heights[state[id].heights.length - 1] += state[id].scrollInfo.clientHeight;
+          newTextState.scrollInfo = newTextState.scrollInfo || {...state[id].scrollInfo};
+          newTextState.scrollInfo.height += state[id].scrollInfo.clientHeight;
+        }
+        return {
+          ...texts,
+          [id]: {
+            ...defaultItem,
+            ...state[id],
+            ...newTextState,
+          },
+        }
+      }, {}),
     };
   },
   RECALC_SYNCED_TEXTS: (state, {}, fullState) => ({
@@ -635,4 +660,5 @@ export default typeReducers(ACTION_TYPES.TEXTS_VIEW, defaultState, {
   SCROLL_SET: delegateReducerById(oneItemReducer),
   SCROLL_LINE: delegateReducerById(oneItemReducer),
   SCROLL_PARAGRAPH: delegateReducerById(oneItemReducer),
+  SCROLL_TO_SELECTION: delegateReducerById(oneItemReducer),
 })

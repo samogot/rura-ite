@@ -6,7 +6,6 @@ import CodeMirror from 'codemirror';
 import {pacomoDecorator} from '../utils/pacomo';
 import throttle from 'lodash.throttle';
 import debounce from 'lodash.debounce';
-import isequal from 'lodash.isequal';
 import SCROLL_CONFIG from '../constants/SCROLL_CONFIG';
 
 function normalizeLineEndings(str) {
@@ -141,9 +140,13 @@ class CodeMirrorTextFrame extends React.Component {
       this.lastScrollSet = +new Date;
       this.cm.scrollTo(null, this.props.scrollTop);
     }
-    if (!isequal(this.cm.listSelections(), this.props.selections)) {
-      this.lastSelectionsSet = +new Date;
-      this.cm.setSelections(this.props.selections);
+    if (this.props.selections != prevProps.selections) {
+      const curSels = this.cm.listSelections();
+      if (curSels.length != this.props.selections.length ||
+          this.props.selections.some((s, i) => s.head.line != curSels[i].head.line || s.head.ch != curSels[i].head.ch || s.anchor.line != curSels[i].anchor.line || s.anchor.ch != curSels[i].anchor.ch)) {
+        this.lastSelectionsSet = +new Date;
+        this.cm.setSelections(this.props.selections);
+      }
     }
     if (this.props.offsets != prevProps.offsets) {
       // console.log(this.alignMarks);
@@ -242,6 +245,9 @@ class CodeMirrorTextFrame extends React.Component {
     const now = +new Date;
     if (this.lastSelectionsSet + 250 > now) return false;
     this.props.updateSelections(this.props.textId, this.cm.listSelections());
+    if (this.props.anchorSelection) {
+      this.props.scrollToSellection(this.props.textId);
+    }
   }
 
   onResize() {

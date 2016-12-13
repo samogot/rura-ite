@@ -25,7 +25,7 @@ class CodeMirrorTextFrame extends React.Component {
     this.onScroll = throttle(this.onScroll.bind(this), 16);
     this.onResize = debounce(this.onResize.bind(this), 50);
     this.onWheel = this.onWheel.bind(this);
-    this.onCursorActivity = debounce(this.onCursorActivity.bind(this), 200);
+    this.onCursorActivity = this.onCursorActivity.bind(this);
     // this.onGutterDragStart = this.onGutterDragStart.bind(this);
     // this.onGutterDragOver = this.onGutterDragOver.bind(this);
     // this.onGutterDrop = this.onGutterDrop.bind(this);
@@ -183,7 +183,7 @@ class CodeMirrorTextFrame extends React.Component {
   }
 
   onFocus() {
-    this.onCursorActivity.flush();
+    this.onCursorActivity();
     if (this.props.chapter.text == this.props.textId) {
       this.props.selectActiveChapter(this.props.chapter.id);
     }
@@ -191,8 +191,30 @@ class CodeMirrorTextFrame extends React.Component {
   }
 
   onChange() {
-    if (this.lastTextSet + 150 <= +new Date) {
-      this.props.saveText(this.props.textId, this.cm.getValue());
+    if (this.lastTextSet + 150 > +new Date) return;
+    this.props.saveText(this.props.textId, this.cm.getValue());
+    if (this.cm.lineCount() != this.props.offsets.length) {
+      const offsets = [];
+      const viewport = this.cm.getViewport();
+      this.cm.eachLine(line => {
+        const info = this.cm.lineInfo(line);
+        let offset = 0;
+        this.alignMarks[info.line] = null;
+        if (info.widgets) {
+          for (let widget of info.widgets) {
+            if (widget.node.className == 'CodeMirror-align-spacer') {
+              this.alignMarks[info.line] = widget;
+              offset = widget.height;
+            }
+          }
+        }
+        offsets.push(offset);
+      });
+      for (let i = this.cm.lineCount(); i < this.alignMarks.length; ++i) {
+        this.alignMarks[i] = null;
+      }
+      this.props.updateOffsets(this.props.textId, offsets);
+      this.props.scrollToSelectionDebounced(this.props.textId);
     }
   }
 
@@ -211,7 +233,7 @@ class CodeMirrorTextFrame extends React.Component {
   onHeightChange() {
     const {viewport, heights} = this.getViewportLinesHeights();
     const scrollInfo = this.cm.getScrollInfo();
-    this.props.updateLinesHeights(this.props.textId, viewport, heights, scrollInfo.height);
+    this.props.updateLinesHeights(this.props.textId, viewport, heights, scrollInfo.height, this.cm.lineCount());
   }
 
   onWheel(e) {
@@ -244,9 +266,13 @@ class CodeMirrorTextFrame extends React.Component {
   onCursorActivity() {
     const now = +new Date;
     if (this.lastSelectionsSet + 250 > now) return false;
-    this.props.updateSelections(this.props.textId, this.cm.listSelections());
-    if (this.props.anchorSelection) {
-      this.props.scrollToSellection(this.props.textId);
+    const selections = this.cm.listSelections();
+    this.props.updateSelectionsOnly(this.props.textId, selections);
+    if (selections[0].head.line != this.props.selections[0].head.line) {
+      this.props.syncSelections(this.props.textId);
+      if (this.props.anchorSelection) {
+        this.props.scrollToSelection(this.props.textId);
+      }
     }
   }
 

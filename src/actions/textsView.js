@@ -1,6 +1,5 @@
 import T from '../constants/ACTION_TYPES';
-import debounce from 'lodash.debounce';
-
+import makeDebouncedActionCreator from '../utils/makeDebouncedActionCreator';
 
 export function selectActiveChapter(id) {
   return [
@@ -12,11 +11,7 @@ export function selectActiveChapter(id) {
   ]
 }
 
-const selectActiveChapterDebounced = debounce((id, dispatch) => dispatch(selectActiveChapter(id)), 0);
-
-export function selectActiveChapterDebounce(id) {
-  return selectActiveChapterDebounced.bind(undefined, id);
-}
+export const selectActiveChapterDebounce = makeDebouncedActionCreator(selectActiveChapter);
 
 export function selectActiveText(id) {
   return {
@@ -25,19 +20,16 @@ export function selectActiveText(id) {
   };
 }
 
-const selectActiveTextDebounced = debounce((id, dispatch) => dispatch(selectActiveText(id)), 0);
+export const selectActiveTextDebounce = makeDebouncedActionCreator(selectActiveText);
 
-export function selectActiveTextDebounce(id) {
-  return selectActiveTextDebounced.bind(undefined, id);
-}
-
-export function updateLinesHeightsOnly(id, viewport, heights, fullHeight) {
+export function updateLinesHeightsOnly(id, viewport, heights, fullHeight, lineCount) {
   return {
     type: T.TEXTS_VIEW.UPDATE_LINES_HEIGHTS,
     id,
     viewport,
     heights,
     fullHeight,
+    lineCount,
   }
 }
 
@@ -49,13 +41,17 @@ export function updateClientHeight(id, clientHeight) {
   }
 }
 
+export function updateSelectionsOnly(id, selections) {
+  return {
+    type: T.TEXTS_VIEW.UPDATE_SELECTIONS,
+    id,
+    selections,
+  };
+}
+
 export function updateSelections(id, selections) {
   return [
-    {
-      type: T.TEXTS_VIEW.UPDATE_SELECTIONS,
-      id,
-      selections,
-    },
+    updateSelectionsOnly(id, selections),
     syncSelections(id),
   ]
 }
@@ -66,15 +62,19 @@ export function recalcOffsets() {
   }
 }
 
-const recalcOffsetsDebounced = debounce(dispatch => dispatch(recalcOffsets()), 100);
+export const recalcOffsetsDebounce = makeDebouncedActionCreator(recalcOffsets, 100);
 
-export function recalcOffsetsDebounce() {
-  return recalcOffsetsDebounced;
+export function updateOffsets(id, offsets) {
+  return {
+    type: T.TEXTS_VIEW.UPDATE_OFFSETS,
+    id,
+    offsets,
+  }
 }
 
-export function updateLinesHeights(id, viewport, heights, fullHeight) {
+export function updateLinesHeights(id, viewport, heights, fullHeight, lineCount) {
   return [
-    updateLinesHeightsOnly(id, viewport, heights, fullHeight),
+    updateLinesHeightsOnly(id, viewport, heights, fullHeight, lineCount),
     recalcOffsetsDebounce(),
   ]
 }
@@ -148,19 +148,21 @@ export function scrollParagraph(id, ammount) {
   ];
 }
 
-export function scrollToSellectionOnly(id) {
+export function scrollToSelectionOnly(id) {
   return {
     type: T.TEXTS_VIEW.SCROLL_TO_SELECTION,
     id,
   }
 }
 
-export function scrollToSellection(id) {
+export function scrollToSelection(id) {
   return [
-    scrollToSellectionOnly(id),
+    scrollToSelectionOnly(id),
     syncScroll(id),
   ];
 }
+
+export const scrollToSelectionDebounced = makeDebouncedActionCreator(makeDebouncedActionCreator(scrollToSelection, 200), 300);
 
 export function recalcSyncedTexts() {
   return [

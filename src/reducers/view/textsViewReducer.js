@@ -3,7 +3,7 @@ import delegateReducerById from '../../utils/delegateReducerById';
 import ACTION_TYPES from '../../constants/ACTION_TYPES';
 import SCROLL_CONFIG from '../../constants/SCROLL_CONFIG';
 
-const defaultItem = {
+export const defaultItem = {
   heights: [],
   offsets: [],
   scrollInfo: {
@@ -22,10 +22,15 @@ const defaultItem = {
 };
 
 const oneItemReducer = typeReducers(ACTION_TYPES.TEXTS_VIEW, defaultItem, {
-  UPDATE_LINES_HEIGHTS: (state, {viewport, heights, fullHeight}) => {
+  UPDATE_LINES_HEIGHTS: (state, {viewport, heights, fullHeight, lineCount}) => {
     const newHeights = state.heights.slice();
     newHeights[viewport.from] = null;
-    newHeights.splice(viewport.from, viewport.to - viewport.from + 1, ...heights);
+    if (viewport.to == lineCount) {
+      newHeights.splice(viewport.from, newHeights.length - viewport.from, ...heights);
+    }
+    else {
+      newHeights.splice(viewport.from, viewport.to - viewport.from, ...heights);
+    }
     return {
       ...state,
       viewport,
@@ -34,6 +39,15 @@ const oneItemReducer = typeReducers(ACTION_TYPES.TEXTS_VIEW, defaultItem, {
         ...state.scrollInfo,
         height: fullHeight,
       },
+    }
+  },
+  UPDATE_OFFSETS: (state, {offsets}) => {
+    const newOffsets = state.offsets.slice();
+    newOffsets[state.viewport.from] = null;
+    newOffsets.splice(state.viewport.from, state.viewport.to - state.viewport.from, ...offsets);
+    return {
+      ...state,
+      offsets: offsets,
     }
   },
   UPDATE_CLIENT_HEIGHT: (state, {clientHeight}) => ({
@@ -84,8 +98,25 @@ const oneItemReducer = typeReducers(ACTION_TYPES.TEXTS_VIEW, defaultItem, {
     const scrollAnchor = fullState.data.config.scroll.scrollAnchor;
     const line = state.selections[0].head.line;
     const screenAnchor = scrollAnchor * state.scrollInfo.clientHeight;
-    const lineAnchor = scrollAnchor * (state.heights[line + 1] - state.heights[line]) + state.heights[line];
-    let newScrollTop = lineAnchor - screenAnchor;
+    if (!state.heights[line + 1]) {
+      return state;
+    }
+    let height = state.heights[line + 1] - state.heights[line];
+    if (line == state.heights.length - 2) {
+      height -= state.offsets[line];
+      let anyTeaxtsHasMoreLines = false;
+      for (let [,text] of Object.entries(fullState.view.texts.syncData.syncedTexts)) {
+        if (fullState.view.texts[text] && fullState.view.texts[text].heights[line + 2]) {
+          anyTeaxtsHasMoreLines = true;
+          height = Math.max(height, fullState.view.texts[text].heights[line + 1] - fullState.view.texts[text].heights[line]);
+        }
+      }
+      if (!anyTeaxtsHasMoreLines) {
+        height += state.offsets[line];
+      }
+    }
+    const lineAnchor = scrollAnchor * height + state.heights[line];
+    let newScrollTop = Math.round(lineAnchor - screenAnchor);
     newScrollTop = Math.min(Math.max(newScrollTop, 0), state.scrollInfo.height - state.scrollInfo.clientHeight);
     return {
       ...state,
@@ -220,7 +251,7 @@ function computeOffsets(state) {
 
 
   for (const textSet of state.syncData.alignedTextSets) {
-    let minViewport = Infinity, maxViewport = 0;
+    let minViewport = Infinity, maxViewport = -Infinity;
     let minViewportId, maxViewportId;
     const extraOffsets = {};
     for (let id of textSet) {
@@ -229,11 +260,15 @@ function computeOffsets(state) {
         minViewport = minTemp;
         minViewportId = id;
       }
-      const maxTemp = Math.min(prevState(id).heights.length - 1, mergeAtLine(id, prevState(id).viewport.to, state.syncData)[0][id].from);
+      const maxTemp = Math.min(prevState(id).heights.length - 1, mergeAtLine(id, prevState(id).viewport.to, state.syncData)[0][id].to - 1);
       if (maxViewport < maxTemp) {
         maxViewport = maxTemp;
         maxViewportId = id;
       }
+    }
+    if (maxViewportId != minViewportId) {
+      minViewport = mergeAtLine(minViewportId, prevState(minViewportId).viewport.from, state.syncData)[0][maxViewportId].from;
+      minViewportId = maxViewportId;
     }
     for (let id of textSet) {
       resultOffsets[id] = {offsets: prevState(id).offsets.slice(), minViewport, maxViewport};
@@ -270,7 +305,7 @@ function computeOffsets(state) {
       line = merge[minViewportId].to;
     }
     for (let id of textSet) {
-      if (extraOffsets[id] && state[id].heights[state[id].heights.length - 1] >= state[id].scrollInfo.height - 10) {
+      if (extraOffsets[id] && Math.max(state[id].heights[state[id].heights.length - 1], state[id].scrollInfo.clientHeight) >= state[id].scrollInfo.height - 10) {
         resultOffsets[id].offsets[resultOffsets[id].offsets.length - 1] += extraOffsets[id];
       }
     }
@@ -285,12 +320,17 @@ function computeOffsets(state) {
         totalOffsetsDiff += resultOffset(id, line) - prevOffset(id, line);
       }
     }
+    const prevHeight = prevState(id).scrollInfo.height;
+    let newHeight = prevHeight + totalOffsetsDiff;
+    if (prevHeight == prevState(id).scrollInfo.clientHeight) {
+      newHeight = resultOffsets[id].heights[resultOffsets[id].heights.length - 1] + resultOffsets[id].heights[0];
+    }
     resultOffsets[id] = {
       heights: resultOffsets[id].heights,
       offsets: resultOffsets[id].offsets,
       scrollInfo: {
         ...prevState(id).scrollInfo,
-        height: prevState(id).scrollInfo.height + totalOffsetsDiff,
+        height: newHeight,
       },
     };
   }
@@ -570,9 +610,7 @@ export default typeReducers(ACTION_TYPES.TEXTS_VIEW, defaultState, {
     }
   },
   SYNC_SELECTIONS: (state, {id}) => {
-    if (state[id].selections.length > 1 || !Object.entries(state.syncData.syncedTexts).map(([,id]) => id).includes(id)
-        || state[id].selections[0].head.line != state[id].selections[0].anchor.line
-        || state[id].selections[0].head.ch != state[id].selections[0].anchor.ch) {
+    if (state[id].selections.length > 1 || !Object.entries(state.syncData.syncedTexts).map(([,id]) => id).includes(id)) {
       return state;
     }
     const [merge] = mergeAtLine(id, state[id].selections[0].head.line, state.syncData);
@@ -581,10 +619,11 @@ export default typeReducers(ACTION_TYPES.TEXTS_VIEW, defaultState, {
       ...state,
       ...Object.entries(state.syncData.syncedTexts).reduce((texts, [,targetId]) => {
         let selections = [];
-        if (id == targetId || state[targetId].selections.length > 1
-            || state[targetId].selections[0].head.line != state[targetId].selections[0].anchor.line
-            || state[targetId].selections[0].head.ch != state[targetId].selections[0].anchor.ch) {
-          selections = state[targetId].selections;
+        const targetState = state[targetId] || defaultItem;
+        if (id == targetId || targetState.selections.length > 1
+            || targetState.selections[0].head.line != targetState.selections[0].anchor.line
+            || targetState.selections[0].head.ch != targetState.selections[0].anchor.ch) {
+          selections = targetState.selections;
         }
         else {
           const targetLine = merge[targetId].from + Math.floor(ratio * (merge[targetId].to - merge[targetId].from));
@@ -596,8 +635,7 @@ export default typeReducers(ACTION_TYPES.TEXTS_VIEW, defaultState, {
         return {
           ...texts,
           [targetId]: {
-            ...defaultItem,
-            ...state[targetId],
+            ...targetState,
             selections,
           },
         }
@@ -655,6 +693,7 @@ export default typeReducers(ACTION_TYPES.TEXTS_VIEW, defaultState, {
     },
   }),
   UPDATE_LINES_HEIGHTS: delegateReducerById(oneItemReducer),
+  UPDATE_OFFSETS: delegateReducerById(oneItemReducer),
   UPDATE_CLIENT_HEIGHT: delegateReducerById(oneItemReducer),
   UPDATE_SELECTIONS: delegateReducerById(oneItemReducer),
   SCROLL_SET: delegateReducerById(oneItemReducer),

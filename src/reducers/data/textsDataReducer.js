@@ -60,16 +60,13 @@ function mergeNextLine(sourceMerges, line) {
   const resultSourceMerges = [];
   let prevMerge = {dstTo: 0, srcTo: 0};
   for (let merge of sourceMerges) {
-    if (prevMerge.dstTo <= line && merge.dstFrom > line + 1) {
+    if (prevMerge.dstTo <= line && merge.dstFrom > line) {
       resultSourceMerges.push({
         dstFrom: line,
         srcFrom: line - prevMerge.dstTo + prevMerge.srcTo,
         dstTo: line + 2,
         srcTo: line - prevMerge.dstTo + prevMerge.srcTo + 1,
       });
-    }
-    else if (prevMerge.dstTo <= line && merge.dstFrom == line + 1) {
-      return sourceMerges;
     }
     if (merge.dstTo <= line) {
       resultSourceMerges.push(merge);
@@ -137,16 +134,13 @@ function disuniteNextLine(sourceMerges, line) {
   const resultSourceMerges = [];
   let prevMerge = {dstTo: 0, srcTo: 0};
   for (let merge of sourceMerges) {
-    if (prevMerge.dstTo <= line && merge.dstFrom > line + 1) {
+    if (prevMerge.dstTo <= line && merge.dstFrom > line) {
       resultSourceMerges.push({
         dstFrom: line,
         srcFrom: line - prevMerge.dstTo + prevMerge.srcTo,
         dstTo: line + 1,
         srcTo: line - prevMerge.dstTo + prevMerge.srcTo + 2,
       });
-    }
-    else if (prevMerge.dstTo <= line && merge.dstFrom == line + 1) {
-      return sourceMerges;
     }
     if (merge.dstTo <= line) {
       resultSourceMerges.push(merge);

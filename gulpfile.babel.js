@@ -57,8 +57,9 @@ gulp.task('dist:index', () => {
 
   // Build the index.html using the names of compiled files
   return gulp.src('src/index.html')
+    .pipe(gulp.dest('dist'))
     .pipe($.inject(app, {
-      ignorePath: 'dist',
+      relative: true,
       starttag: '<!-- inject:app:{{ext}} -->'
     }))
     .on("error", $.util.log)

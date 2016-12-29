@@ -20,6 +20,7 @@ class CodeMirrorTextFrame extends React.Component {
   constructor(props, context) {
     super(props, context);
     this.refreshCM = this.refreshCM.bind(this);
+    this.onPaste = this.onPaste.bind(this);
     this.onFocus = this.onFocus.bind(this);
     this.onShow = this.onShow.bind(this);
     this.onChange = this.onChange.bind(this);
@@ -54,6 +55,7 @@ class CodeMirrorTextFrame extends React.Component {
     this.props.glContainer.on('resize', this.refreshCM);
     this.props.glContainer.on('resize', this.onResize);
     this.props.glContainer.on('show', this.onShow);
+    this.cm.on("paste", this.onPaste);
     this.cm.on('focus', this.onFocus);
     this.cm.on("scroll", this.onScroll);
     this.cm.on("viewportChange", this.onHeightChange);
@@ -72,6 +74,7 @@ class CodeMirrorTextFrame extends React.Component {
     this.props.glContainer.off('resize', this.refreshCM);
     this.props.glContainer.off('resize', this.onResize);
     this.props.glContainer.off('show', this.onShow);
+    this.cm.off("paste", this.onPaste);
     this.cm.off('focus', this.onFocus);
     this.cm.off("scroll", this.onScroll);
     this.cm.off("viewportChange", this.onHeightChange);
@@ -132,6 +135,14 @@ class CodeMirrorTextFrame extends React.Component {
           }
         }
       });
+    }
+  }
+
+  onPaste(_, event) {
+    const html = event.clipboardData.getData('text/html');
+    if (html) {
+      this.props.pasteHtml(this.props.textId, html);
+      event.preventDefault();
     }
   }
 

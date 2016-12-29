@@ -47,6 +47,7 @@ export default defineActionTypes({
     APPLY_OPERATION_TO_STORE
     APPLY_OPERATION_TO_CM
     SAVE_CLIENT_STATE
+    PASTE_HTML
   `,
 
   CHAPTERS_DATA: `

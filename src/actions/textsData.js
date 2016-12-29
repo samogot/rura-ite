@@ -118,3 +118,11 @@ export function applyOperationFromCode(id, operation) {
     applyOperationFromCM(id, operation),
   ];
 }
+
+export function pasteHtml(id, html) {
+  return {
+    type: T.TEXTS_DATA.PASTE_HTML,
+    id,
+    html
+  };
+}

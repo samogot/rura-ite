@@ -46,8 +46,7 @@ class GoldenLayout extends React.Component {
   connectFakeStore() {
     const subscribeFakeListener = () => {
       window['$$gl-redux-bridge-state'] = this.store.getState();
-      // window.localStorage.setItem("redux-store", JSON.stringify(this.store.getState()));
-      setTimeout(() => this.gl.eventHub.emit('redux-subscribe'), 0);
+      this.gl.eventHub.emit('redux-subscribe');
     };
 
     const dispatchFromFake = (action) => {
@@ -55,7 +54,6 @@ class GoldenLayout extends React.Component {
     };
 
     window['$$gl-redux-bridge-state'] = this.store.getState();
-    // window.localStorage.setItem("redux-store", JSON.stringify(this.store.getState()));
     const unsubscribe = this.store.subscribe(subscribeFakeListener);
     this.gl.eventHub.on('redux-dispatch', dispatchFromFake);
 
@@ -66,18 +64,6 @@ class GoldenLayout extends React.Component {
   }
 
   subscribeChanges() {
-    // let alreadySaving = false;
-    // const saveState = () => {
-    //   if (!alreadySaving && this.gl.isInitialised && this.gl.openPopouts.every((w) => w.isInitialised)) {
-    //     alreadySaving = true;
-    //     this.props.saveLayout(this.gl.toConfig());
-    //     alreadySaving = false;
-    //   }
-    //   else {
-    //     this.changeListnerTimeout = setTimeout(changeListner, 10);
-    //   }
-    // };
-
     const changeListner = debounce(() => {
       if (this.gl.isInitialised && this.gl.openPopouts.every((w) => w.isInitialised)) {
         this.props.saveLayout(this.gl.toConfig())

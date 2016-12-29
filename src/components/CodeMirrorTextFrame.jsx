@@ -7,6 +7,8 @@ import {pacomoDecorator} from '../utils/pacomo';
 import throttle from 'lodash.throttle';
 import debounce from 'lodash.debounce';
 import SCROLL_CONFIG from '../constants/SCROLL_CONFIG';
+global.ot = global.ot || require('ot');
+require('ot/lib/codemirror-adapter');
 
 function normalizeLineEndings(str) {
   if (!str) return str;
@@ -25,19 +27,15 @@ class CodeMirrorTextFrame extends React.Component {
     this.onScroll = throttle(this.onScroll.bind(this), 16);
     this.onResize = debounce(this.onResize.bind(this), 50);
     this.onWheel = this.onWheel.bind(this);
-    this.onCursorActivity = this.onCursorActivity.bind(this);
-    // this.onGutterDragStart = this.onGutterDragStart.bind(this);
-    // this.onGutterDragOver = this.onGutterDragOver.bind(this);
-    // this.onGutterDrop = this.onGutterDrop.bind(this);
-    this.lastScrollSet = 0;
-    this.lastTextSet = 0;
-    this.lastSelectionsSet = 0;
+    this.onSelectionChange = this.onSelectionChange.bind(this);
+    this.ignoreNextScroll = false;
+    this.ignoreNextSelectionChange = false;
     this.alignMarks = [];
   }
 
   componentDidMount() {
     const options = {
-      lineNumbers: true,
+      lineNumbers: false,
       matchBrackets: true,
       lineWrapping: true,
       styleActiveLine: true,
@@ -46,85 +44,40 @@ class CodeMirrorTextFrame extends React.Component {
     };
 
     this.cm = CodeMirror.fromTextArea(this.refs.textarea, options);
+    this.cmAdapter = new ot.CodeMirrorAdapter(this.cm);
+    this.cmAdapter.registerCallbacks({
+      change: this.onChange,
+      selectionChange: this.onSelectionChange,
+    });
     this.props.glContainer.on('open', this.refreshCM);
     this.props.glContainer.on('show', this.refreshCM);
     this.props.glContainer.on('resize', this.refreshCM);
     this.props.glContainer.on('resize', this.onResize);
     this.props.glContainer.on('show', this.onShow);
     this.cm.on('focus', this.onFocus);
-    this.cm.on("change", this.onChange);
-    this.cm.on("change", this.onHeightChange);
     this.cm.on("scroll", this.onScroll);
     this.cm.on("viewportChange", this.onHeightChange);
-    this.cm.on("cursorActivity", this.onCursorActivity);
     this.cm.display.wrapper.addEventListener("wheel", this.onWheel);
-    // this.cm.display.gutters.draggable = true;
-    // this.cm.on('dragover', this.onCMDragOver);
-    // this.cm.display.gutters.addEventListener('dragstart', this.onGutterDragStart);
-    // this.cm.display.gutters.addEventListener('dragover', this.onGutterDragOver);
-    // this.cm.display.gutters.addEventListener('drop', this.onGutterDrop);
-    // this.cm.display.gutters.addEventListener('mousedown', this.onGutterMouseDown);
-    this.componentDidUpdate({scrollTop: 0, text: '', offsets: [], selections: []});
+    this.componentDidUpdate({textId: 0, scrollTop: 0, text: '', offsets: [], selection: {ranges: []}});
+
     if (!this.props.glContainer.isHidden && this.props.chapter.text == this.props.textId) {
       window.cm = this.cm;
     }
   }
 
   componentWillUnmount() {
+    this.cmAdapter.detach();
     this.props.glContainer.off('open', this.refreshCM);
     this.props.glContainer.off('show', this.refreshCM);
     this.props.glContainer.off('resize', this.refreshCM);
     this.props.glContainer.off('resize', this.onResize);
     this.props.glContainer.off('show', this.onShow);
     this.cm.off('focus', this.onFocus);
-    this.cm.off("change", this.onChange);
-    this.cm.off("change", this.onHeightChange);
     this.cm.off("scroll", this.onScroll);
     this.cm.off("viewportChange", this.onHeightChange);
-    this.cm.off("cursorActivity", this.onCursorActivity);
     this.cm.display.wrapper.removeEventListener("wheel", this.onWheel);
     this.cm.toTextArea();
   }
-
-  // onGutterDragStart(e) {
-  //   const line = this.cm.lineAtHeight(e.screenY, 'window');
-  //   e.dataTransfer.setData("application/x-ite-line-number+plain", line);
-  //   e.stopPropagation();
-  // }
-  //
-  // onGutterDragOver(e) {
-  //   try {
-  //     if (e.dataTransfer.getData("application/x-ite-line-number+plain")) {
-  //       e.preventDefault();
-  //       e.stopPropagation();
-  //     }
-  //   }
-  //   catch (er) {}
-  // }
-  //
-  // onCMDragOver(e) {
-  //   try {
-  //     if (e.dataTransfer.getData("application/x-ite-line-number+plain")) {
-  //       e.codemirrorIgnore = true;
-  //     }
-  //   }
-  //   catch (er) {}
-  // }
-  //
-  // onGutterMouseDown(e) {
-  //   e.stopPropagation();
-  // }
-  //
-  // onGutterDrop(e) {
-  //   const data = e.dataTransfer.getData("application/x-ite-line-number+plain");
-  //   if (data) {
-  //     const line = this.cm.lineAtHeight(e.screenY, 'window');
-  //     console.log({current: line, source: data});
-  //     e.preventDefault();
-  //     e.stopPropagation();
-  //   }
-  //
-  // }
 
   render() {
     return <div><textarea ref="textarea" autoComplete="off"/></div>;
@@ -132,20 +85,27 @@ class CodeMirrorTextFrame extends React.Component {
 
   componentDidUpdate(prevProps) {
     // console.log('componentDidUpdate', this.props.textId, prevProps.scrollTop, this.props.scrollTop, this.cm.getScrollInfo().top);
-    if (this.cm.getValue() != this.props.text) {
-      this.lastTextSet = +new Date;
+    if (this.props.textId != prevProps.textId && this.cm.getValue() != this.props.text) {
+      this.cmAdapter.ignoreNextChange = true;
       this.cm.setValue(this.props.text);
     }
+    if (this.props.operationToApply) {
+      this.cmAdapter.applyOperation(ot.TextOperation.fromJSON(this.props.operationToApply));
+    }
     if (this.cm.getScrollInfo().top != this.props.scrollTop) {
-      this.lastScrollSet = +new Date;
+      this.ignoreNextScroll = true;
       this.cm.scrollTo(null, this.props.scrollTop);
     }
-    if (this.props.selections != prevProps.selections) {
-      const curSels = this.cm.listSelections();
-      if (curSels.length != this.props.selections.length ||
-          this.props.selections.some((s, i) => s.head.line != curSels[i].head.line || s.head.ch != curSels[i].head.ch || s.anchor.line != curSels[i].anchor.line || s.anchor.ch != curSels[i].anchor.ch)) {
-        this.lastSelectionsSet = +new Date;
-        this.cm.setSelections(this.props.selections);
+    if (this.props.selection != prevProps.selection) {
+      if (this.props.selection.ranges[0].head == undefined && this.props.selection.ranges[0].line != undefined) {
+        this.cm.setSelection({line: this.props.selection.ranges[0].line, ch: 0});
+      }
+      else {
+        const curSels = this.cmAdapter.getSelection();
+        if (curSels.ranges.length != this.props.selection.ranges.length || this.props.selection.ranges.some((r, i) => r.head != curSels.ranges[i].head || r.anchor != curSels.ranges[i].anchor)) {
+          this.ignoreNextSelectionChange = true;
+          this.cmAdapter.setSelection(this.props.selection);
+        }
       }
     }
     if (this.props.offsets != prevProps.offsets) {
@@ -183,16 +143,15 @@ class CodeMirrorTextFrame extends React.Component {
   }
 
   onFocus() {
-    this.onCursorActivity();
     if (this.props.chapter.text == this.props.textId) {
       this.props.selectActiveChapter(this.props.chapter.id);
     }
     this.props.selectActiveTextDebounce(this.props.textId);
   }
 
-  onChange() {
-    if (this.lastTextSet + 150 > +new Date) return;
-    this.props.saveText(this.props.textId, this.cm.getValue());
+  onChange(operation, invertedOperation) {
+    this.onHeightChange();
+    this.props.applyOperationFromCM(this.props.textId, operation);
     if (this.cm.lineCount() != this.props.offsets.length) {
       const offsets = [];
       const viewport = this.cm.getViewport();
@@ -257,21 +216,28 @@ class CodeMirrorTextFrame extends React.Component {
   }
 
   onScroll() {
-    const now = +new Date;
-    // console.log('onScroll', this.props.textId, this.lastScrollSet, now - this.lastScrollSet);
-    if (this.lastScrollSet + 250 > now) return false;
-    this.props.setScroll(this.props.textId, this.cm.getScrollInfo().top);
+    if (this.ignoreNextScroll) {
+      this.ignoreNextScroll = false;
+    }
+    else {
+      this.props.setScroll(this.props.textId, this.cm.getScrollInfo().top);
+    }
   }
 
-  onCursorActivity() {
-    const now = +new Date;
-    if (this.lastSelectionsSet + 250 > now) return false;
-    const selections = this.cm.listSelections();
-    this.props.updateSelectionsOnly(this.props.textId, selections);
-    if (selections[0].head.line != this.props.selections[0].head.line) {
-      this.props.syncSelections(this.props.textId);
-      if (this.props.anchorSelection) {
-        this.props.scrollToSelection(this.props.textId);
+  onSelectionChange() {
+    if (this.ignoreNextSelectionChange) {
+      this.ignoreNextSelectionChange = false;
+    }
+    else {
+      const selection = this.cmAdapter.getSelection();
+      const CMSelections = this.cm.listSelections();
+      selection.ranges.forEach((r, i) => {r.line = CMSelections[i].head.line});
+      this.props.updateSelectionOnly(this.props.textId, selection);
+      if (selection.ranges[0].line != this.props.selection.ranges[0].line) {
+        this.props.syncSelection(this.props.textId);
+        if (this.props.anchorSelection) {
+          this.props.scrollToSelection(this.props.textId);
+        }
       }
     }
   }

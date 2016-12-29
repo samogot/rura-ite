@@ -16,4 +16,5 @@ export default combineReducers({
     chapters: chaptersData,
     config: configData,
   }),
+  lastAction: (state, action) => action,
 })

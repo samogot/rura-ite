@@ -12,7 +12,7 @@ describe('textsDataReducer', () => {
         view: {
           texts: {
             '1': {
-              selections: [{anchor: {line: 1, ch: 0}, head: {line: 1, ch: 0}}]
+              selection: {ranges: [{line: 1}]}
             },
             focusedText: 1
           }
@@ -37,7 +37,7 @@ describe('textsDataReducer', () => {
         view: {
           texts: {
             '1': {
-              selections: [{anchor: {line: 0, ch: 0}, head: {line: 0, ch: 0}}]
+              selection: {ranges: [{line: 0}]}
             },
             focusedText: 1
           }
@@ -65,7 +65,7 @@ describe('textsDataReducer', () => {
         view: {
           texts: {
             '1': {
-              selections: [{anchor: {line: 5, ch: 0}, head: {line: 5, ch: 0}}]
+              selection: {ranges: [{line: 5}]}
             },
             focusedText: 1
           }
@@ -93,7 +93,7 @@ describe('textsDataReducer', () => {
         view: {
           texts: {
             '1': {
-              selections: [{anchor: {line: 5, ch: 0}, head: {line: 5, ch: 0}}]
+              selection: {ranges: [{line: 5}]}
             },
             focusedText: 1
           }
@@ -123,7 +123,7 @@ describe('textsDataReducer', () => {
         view: {
           texts: {
             '1': {
-              selections: [{anchor: {line: 2, ch: 0}, head: {line: 2, ch: 0}}]
+              selection: {ranges: [{line: 2}]}
             },
             focusedText: 1
           }
@@ -154,7 +154,7 @@ describe('textsDataReducer', () => {
         view: {
           texts: {
             '1': {
-              selections: [{anchor: {line: 0, ch: 0}, head: {line: 0, ch: 0}}]
+              selection: {ranges: [{line: 0}]}
             },
             focusedText: 1
           }
@@ -177,7 +177,7 @@ describe('textsDataReducer', () => {
         view: {
           texts: {
             '1': {
-              selections: [{anchor: {line: 3, ch: 0}, head: {line: 3, ch: 0}}]
+              selection: {ranges: [{line: 3}]}
             },
             focusedText: 1
           }
@@ -204,7 +204,7 @@ describe('textsDataReducer', () => {
         view: {
           texts: {
             '1': {
-              selections: [{anchor: {line: 1, ch: 0}, head: {line: 3, ch: 0}}]
+              selection: {ranges: [{line: 1}]}
             },
             focusedText: 1
           }
@@ -229,7 +229,7 @@ describe('textsDataReducer', () => {
         view: {
           texts: {
             '1': {
-              selections: [{anchor: {line: 1, ch: 0}, head: {line: 1, ch: 0}}]
+              selection: {ranges: [{line: 1}]}
             },
             focusedText: 1
           }
@@ -256,7 +256,7 @@ describe('textsDataReducer', () => {
         view: {
           texts: {
             '1': {
-              selections: [{anchor: {line: 1, ch: 0}, head: {line: 1, ch: 0}}]
+              selection: {ranges: [{line: 1}]}
             },
             focusedText: 1
           }
@@ -283,7 +283,7 @@ describe('textsDataReducer', () => {
         view: {
           texts: {
             '1': {
-              selections: [{anchor: {line: 3, ch: 0}, head: {line: 3, ch: 0}}]
+              selection: {ranges: [{line: 3}]}
             },
             focusedText: 1
           }
@@ -312,7 +312,7 @@ describe('textsDataReducer', () => {
         view: {
           texts: {
             '1': {
-              selections: [{anchor: {line: 1, ch: 0}, head: {line: 3, ch: 0}}]
+              selection: {ranges: [{line: 1}]}
             },
             focusedText: 1
           }
@@ -344,7 +344,7 @@ describe('textsDataReducer', () => {
         view: {
           texts: {
             '1': {
-              selections: [{anchor: {line: 1, ch: 0}, head: {line: 1, ch: 0}}]
+              selection: {ranges: [{line: 1}]}
             },
             focusedText: 1
           }
@@ -369,7 +369,7 @@ describe('textsDataReducer', () => {
         view: {
           texts: {
             '1': {
-              selections: [{anchor: {line: 0, ch: 0}, head: {line: 0, ch: 0}}]
+              selection: {ranges: [{line: 0}]}
             },
             focusedText: 1
           }
@@ -397,7 +397,7 @@ describe('textsDataReducer', () => {
         view: {
           texts: {
             '1': {
-              selections: [{anchor: {line: 4, ch: 0}, head: {line: 4, ch: 0}}]
+              selection: {ranges: [{line: 4}]}
             },
             focusedText: 1
           }
@@ -425,7 +425,7 @@ describe('textsDataReducer', () => {
         view: {
           texts: {
             '1': {
-              selections: [{anchor: {line: 4, ch: 0}, head: {line: 4, ch: 0}}]
+              selection: {ranges: [{line: 4}]}
             },
             focusedText: 1
           }
@@ -455,7 +455,7 @@ describe('textsDataReducer', () => {
         view: {
           texts: {
             '1': {
-              selections: [{anchor: {line: 2, ch: 0}, head: {line: 2, ch: 0}}]
+              selection: {ranges: [{line: 2}]}
             },
             focusedText: 1
           }
@@ -486,7 +486,7 @@ describe('textsDataReducer', () => {
         view: {
           texts: {
             '1': {
-              selections: [{anchor: {line: 0, ch: 0}, head: {line: 0, ch: 0}}]
+              selection: {ranges: [{line: 0}]}
             },
             focusedText: 1
           }
@@ -509,7 +509,7 @@ describe('textsDataReducer', () => {
         view: {
           texts: {
             '1': {
-              selections: [{anchor: {line: 1, ch: 0}, head: {line: 1, ch: 0}}]
+              selection: {ranges: [{line: 1}]}
             },
             focusedText: 1
           }
@@ -536,7 +536,7 @@ describe('textsDataReducer', () => {
         view: {
           texts: {
             '1': {
-              selections: [{anchor: {line: 1, ch: 0}, head: {line: 1, ch: 0}}]
+              selection: {ranges: [{line: 1}]}
             },
             focusedText: 1
           }
@@ -561,7 +561,7 @@ describe('textsDataReducer', () => {
         view: {
           texts: {
             '1': {
-              selections: [{anchor: {line: 1, ch: 0}, head: {line: 1, ch: 0}}]
+              selection: {ranges: [{line: 1}]}
             },
             focusedText: 1
           }
@@ -588,7 +588,7 @@ describe('textsDataReducer', () => {
         view: {
           texts: {
             '1': {
-              selections: [{anchor: {line: 1, ch: 0}, head: {line: 1, ch: 0}}]
+              selection: {ranges: [{line: 1}]}
             },
             focusedText: 1
           }
@@ -615,7 +615,7 @@ describe('textsDataReducer', () => {
         view: {
           texts: {
             '1': {
-              selections: [{anchor: {line: 1, ch: 0}, head: {line: 1, ch: 0}}]
+              selection: {ranges: [{line: 1}]}
             },
             focusedText: 1
           }
@@ -644,7 +644,7 @@ describe('textsDataReducer', () => {
         view: {
           texts: {
             '1': {
-              selections: [{anchor: {line: 1, ch: 0}, head: {line: 1, ch: 0}}]
+              selection: {ranges: [{line: 1}]}
             },
             focusedText: 1
           }

@@ -1,12 +1,19 @@
 import typeReducers from '../../utils/typeReducers';
 import delegateReducerById from '../../utils/delegateReducerById';
 import ACTION_TYPES from '../../constants/ACTION_TYPES';
+import TextOperation from 'ot/lib/text-operation';
 
 
 const defaultItem = {
   id: 0,
   wiki: '',
   sourceMerges: [],
+  client: {
+    revision: 0,
+    state: {
+      type: 'synchronized',
+    },
+  }
 };
 
 
@@ -20,9 +27,13 @@ const oneItemReducer = typeReducers(ACTION_TYPES.TEXTS_DATA, defaultItem, {
     ...data,
   }),
   REMOVE: () => null,
-  ADD_MERGE: (state, {merge}) => ({
+  APPLY_OPERATION_TO_STORE: (state, {operation}) => ({
     ...state,
-    sourceMerges: [...state.sourceMerges, merge].sort((a, b) => b.srcFrom - a.srcFrom),
+    wiki: TextOperation.fromJSON(operation).apply(state.wiki),
+  }),
+  SAVE_CLIENT_STATE: (state, {client}) => ({
+    ...state,
+    client
   }),
 });
 
@@ -34,7 +45,7 @@ function getCurTextId(fullState) {
 
 function getCurSrcTextId(fullState) {
   const curText = getCurTextId(fullState);
-  for (let [l,id] of Object.entries(fullState.view.texts.syncData.syncedTexts)) {
+  for (let [l, id] of Object.entries(fullState.view.texts.syncData.syncedTexts)) {
     if (id == curText) {
       return fullState.view.texts.syncData.syncedTexts[fullState.data.config.srcLang[l]];
     }
@@ -50,7 +61,7 @@ function getSourceMergesReducer(getId, getSourceMerges) {
       ...state,
       [textId]: {
         ...state[textId],
-        sourceMerges: getSourceMerges(state[textId].sourceMerges, fullState.view.texts[textId].selections[0].anchor.line),
+        sourceMerges: getSourceMerges(state[textId].sourceMerges, fullState.view.texts[textId].selection.ranges[0].line),
       }
     };
   };
@@ -216,4 +227,6 @@ export default typeReducers(ACTION_TYPES.TEXTS_DATA, defaultState, {
   UPDATE: delegateReducerById(oneItemReducer),
   ADD: delegateReducerById(oneItemReducer),
   REMOVE: delegateReducerById(oneItemReducer),
+  APPLY_OPERATION_TO_STORE: delegateReducerById(oneItemReducer),
+  SAVE_CLIENT_STATE: delegateReducerById(oneItemReducer),
 });

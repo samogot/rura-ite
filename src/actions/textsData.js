@@ -97,3 +97,24 @@ export function unitNextSrcLine() {
     recalcLineMerges(),
   ];
 }
+
+export function applyOperationFromCM(id, operation) {
+  return (dispatch, state) => {
+    dispatch({
+      type: T.TEXTS_DATA.APPLY_OPERATION_TO_STORE,
+      id: id,
+      operation: operation.toJSON(),
+    });
+  };
+}
+
+export function applyOperationFromCode(id, operation) {
+  return [
+    {
+      type: T.TEXTS_DATA.APPLY_OPERATION_TO_CM,
+      id: id,
+      operation: operation.toJSON(),
+    },
+    applyOperationFromCM(id, operation),
+  ];
+}

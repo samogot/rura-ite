@@ -15,10 +15,13 @@ export const defaultItem = {
     from: 0,
     to: 0,
   },
-  selections: [{
-    head: {line: 0, ch: 0},
-    anchor: {line: 0, ch: 0},
-  }],
+  selection: {
+    ranges: [{
+      line: 0,
+      head: 0,
+      anchor: 0,
+    }]
+  },
 };
 
 const oneItemReducer = typeReducers(ACTION_TYPES.TEXTS_VIEW, defaultItem, {
@@ -57,9 +60,9 @@ const oneItemReducer = typeReducers(ACTION_TYPES.TEXTS_VIEW, defaultItem, {
       clientHeight,
     },
   }),
-  UPDATE_SELECTIONS: (state, {selections}) => ({
+  UPDATE_SELECTION: (state, {selection}) => ({
     ...state,
-    selections,
+    selection,
   }),
   SCROLL_SET: (state, {scrollTop}) => ({
     ...state,
@@ -96,7 +99,7 @@ const oneItemReducer = typeReducers(ACTION_TYPES.TEXTS_VIEW, defaultItem, {
   },
   SCROLL_TO_SELECTION: (state, {}, fullState) => {
     const scrollAnchor = fullState.data.config.scroll.scrollAnchor;
-    const line = state.selections[0].head.line;
+    const line = state.selection.ranges[0].line;
     const screenAnchor = scrollAnchor * state.scrollInfo.clientHeight;
     if (!state.heights[line + 1]) {
       return state;
@@ -105,7 +108,7 @@ const oneItemReducer = typeReducers(ACTION_TYPES.TEXTS_VIEW, defaultItem, {
     if (line == state.heights.length - 2) {
       height -= state.offsets[line];
       let anyTeaxtsHasMoreLines = false;
-      for (let [,text] of Object.entries(fullState.view.texts.syncData.syncedTexts)) {
+      for (let [, text] of Object.entries(fullState.view.texts.syncData.syncedTexts)) {
         if (fullState.view.texts[text] && fullState.view.texts[text].heights[line + 2]) {
           anyTeaxtsHasMoreLines = true;
           height = Math.max(height, fullState.view.texts[text].heights[line + 1] - fullState.view.texts[text].heights[line]);
@@ -163,7 +166,7 @@ export function mergeAtLine(id, line, syncData, startFrom = 0) {
   }
   else if (merge) {
     const res = {};
-    for (let [text,m] of Object.entries(syncData.lineMerges[merge - 1])) {
+    for (let [text, m] of Object.entries(syncData.lineMerges[merge - 1])) {
       res[text] = {
         from: m.to + line - syncData.lineMerges[merge - 1][id].to,
         to: m.to + line - syncData.lineMerges[merge - 1][id].to + 1
@@ -173,7 +176,7 @@ export function mergeAtLine(id, line, syncData, startFrom = 0) {
   }
   else {
     const res = {};
-    for (let [,text] of Object.entries(syncData.syncedTexts)) {
+    for (let [, text] of Object.entries(syncData.syncedTexts)) {
       res[text] = {from: line, to: line + 1}
     }
     return [res, 0];
@@ -353,7 +356,7 @@ function getLineMerges(syncedTexts, fullState) {
   const resultMerges = [];
   const mergesLists = []; //список всех бинарных точек синхронизации с айдишниками
   const syncedLinePosition = {}; //последняя известная позиция в которой все синхронно
-  for (let [l,id] of Object.entries(syncedTexts)) {
+  for (let [l, id] of Object.entries(syncedTexts)) {
     syncedLinePosition[id] = 0;
     // собераем mergesLists переводя из названи языков в айдишники текстов
     if (fullState.data.config.srcLang[l]) {
@@ -571,7 +574,7 @@ function getSyncedTexts(fullState) {
   const targets = {};
   const chapter = fullState.data.chapters[fullState.view.texts.activeChapter];
   targets[chapter.mainLang] = chapter.text;
-  for (let [lang,text] of Object.entries(chapter.langs)) {
+  for (let [lang, text] of Object.entries(chapter.langs)) {
     if (fullState.data.config.scroll.syncTexts === true || fullState.data.config.scroll.syncTexts[lang]) {
       targets[lang] = text;
     }
@@ -590,13 +593,13 @@ export default typeReducers(ACTION_TYPES.TEXTS_VIEW, defaultState, {
   }),
   SYNC_SCROLL: (state, {id}, fullState) => {
     const scrollTop = state[id].scrollInfo.top;
-    const targets = Object.entries(state.syncData.syncedTexts).map(([,t]) => t);
+    const targets = Object.entries(state.syncData.syncedTexts).map(([, t]) => t);
     if (!targets.includes(id)) return state;
     targets.splice(targets.indexOf(id), 1);
     const targetScrollTop = computeTargetScrollPositions(state, id, scrollTop, targets, fullState.data.config.scroll);
     return {
       ...state,
-      ...Object.entries(targetScrollTop).reduce((texts, [id,top]) => ({
+      ...Object.entries(targetScrollTop).reduce((texts, [id, top]) => ({
         ...texts,
         [id]: {
           ...defaultItem,
@@ -609,34 +612,30 @@ export default typeReducers(ACTION_TYPES.TEXTS_VIEW, defaultState, {
       }), {}),
     }
   },
-  SYNC_SELECTIONS: (state, {id}) => {
-    if (state[id].selections.length > 1 || !Object.entries(state.syncData.syncedTexts).map(([,id]) => id).includes(id)) {
+  SYNC_SELECTION: (state, {id}) => {
+    if (state[id].selection.ranges.length > 1 || !Object.entries(state.syncData.syncedTexts).map(([, id]) => id).includes(id)) {
       return state;
     }
-    const [merge] = mergeAtLine(id, state[id].selections[0].head.line, state.syncData);
-    const ratio = (state[id].selections[0].head.line - merge[id].from) / (merge[id].to - merge[id].from);
+    const [merge] = mergeAtLine(id, state[id].selection.ranges[0].line, state.syncData);
+    const ratio = (state[id].selection.ranges[0].line - merge[id].from) / (merge[id].to - merge[id].from);
     return {
       ...state,
-      ...Object.entries(state.syncData.syncedTexts).reduce((texts, [,targetId]) => {
-        let selections = [];
+      ...Object.entries(state.syncData.syncedTexts).reduce((texts, [, targetId]) => {
+        let selection = {};
         const targetState = state[targetId] || defaultItem;
-        if (id == targetId || targetState.selections.length > 1
-            || targetState.selections[0].head.line != targetState.selections[0].anchor.line
-            || targetState.selections[0].head.ch != targetState.selections[0].anchor.ch) {
-          selections = targetState.selections;
+        if (id == targetId || targetState.selection.ranges.length > 1
+            || targetState.selection.ranges[0].head != targetState.selection.ranges[0].anchor) {
+          selection = targetState.selection;
         }
         else {
           const targetLine = merge[targetId].from + Math.floor(ratio * (merge[targetId].to - merge[targetId].from));
-          selections = [{
-            anchor: {line: targetLine, ch: 0},
-            head: {line: targetLine, ch: 0},
-          }];
+          selection = {ranges: [{line: targetLine}]};
         }
         return {
           ...texts,
           [targetId]: {
             ...targetState,
-            selections,
+            selection,
           },
         }
       }, {}),
@@ -651,7 +650,7 @@ export default typeReducers(ACTION_TYPES.TEXTS_VIEW, defaultState, {
     }
     return {
       ...state,
-      ...Object.entries(newOffsets).reduce((texts, [id,newTextState]) => {
+      ...Object.entries(newOffsets).reduce((texts, [id, newTextState]) => {
         if (fullState.data.config.scroll.extraBottomHeight && state[id].heights[state[id].heights.length - 1] >= state[id].scrollInfo.height - 10) {
           newTextState.offsets[state[id].heights.length - 2] = newTextState.offsets[state[id].heights.length - 2] || 0;
           newTextState.offsets[state[id].heights.length - 2] += state[id].scrollInfo.clientHeight;
@@ -682,7 +681,7 @@ export default typeReducers(ACTION_TYPES.TEXTS_VIEW, defaultState, {
     ...state,
     syncData: {
       ...state.syncData,
-      alignedTextSets: getAlignedTextSets(Object.entries(state.syncData.syncedTexts).map(([,t]) => t), fullState),
+      alignedTextSets: getAlignedTextSets(Object.entries(state.syncData.syncedTexts).map(([, t]) => t), fullState),
     }
   }),
   RECALC_LINE_MERGES: (state, {}, fullState) => ({
@@ -695,7 +694,7 @@ export default typeReducers(ACTION_TYPES.TEXTS_VIEW, defaultState, {
   UPDATE_LINES_HEIGHTS: delegateReducerById(oneItemReducer),
   UPDATE_OFFSETS: delegateReducerById(oneItemReducer),
   UPDATE_CLIENT_HEIGHT: delegateReducerById(oneItemReducer),
-  UPDATE_SELECTIONS: delegateReducerById(oneItemReducer),
+  UPDATE_SELECTION: delegateReducerById(oneItemReducer),
   SCROLL_SET: delegateReducerById(oneItemReducer),
   SCROLL_LINE: delegateReducerById(oneItemReducer),
   SCROLL_PARAGRAPH: delegateReducerById(oneItemReducer),

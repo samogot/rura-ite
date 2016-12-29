@@ -41,18 +41,18 @@ export function updateClientHeight(id, clientHeight) {
   }
 }
 
-export function updateSelectionsOnly(id, selections) {
+export function updateSelectionOnly(id, selection) {
   return {
-    type: T.TEXTS_VIEW.UPDATE_SELECTIONS,
+    type: T.TEXTS_VIEW.UPDATE_SELECTION,
     id,
-    selections,
+    selection,
   };
 }
 
-export function updateSelections(id, selections) {
+export function updateSelection(id, selection) {
   return [
-    updateSelectionsOnly(id, selections),
-    syncSelections(id),
+    updateSelectionOnly(id, selection),
+    syncSelection(id),
   ]
 }
 
@@ -94,9 +94,9 @@ export function syncScroll(id) {
   }
 }
 
-export function syncSelections(id) {
+export function syncSelection(id) {
   return {
-    type: T.TEXTS_VIEW.SYNC_SELECTIONS,
+    type: T.TEXTS_VIEW.SYNC_SELECTION,
     id,
   }
 }

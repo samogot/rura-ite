@@ -58,6 +58,7 @@
     "lodash.throttle": "^4.1.1",
     "lorem-ipsum": "^1.0.3",
     "lorem-ipsum-japanese": "^1.0.1",
+    "ot": "0.0.15",
     "react": "^0.14.0",
     "react-dom": "^0.14.0",
     "react-modal": "^1.6.1",

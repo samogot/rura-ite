@@ -69,6 +69,7 @@
     "redux-multi": "0.1.12",
     "redux-shortcuts": "0.0.3",
     "redux-thunk": "^1.0.0",
+    "reselect": "^2.5.4",
     "translit": "0.0.1",
     "translit-russian": "0.0.2",
     "uniloc": "^0.2.0"

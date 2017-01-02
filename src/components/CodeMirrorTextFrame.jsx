@@ -60,7 +60,14 @@ class CodeMirrorTextFrame extends React.Component {
     this.cm.on("scroll", this.onScroll);
     this.cm.on("viewportChange", this.onHeightChange);
     this.cm.display.wrapper.addEventListener("wheel", this.onWheel);
-    this.componentDidUpdate({textId: 0, scrollTop: 0, text: '', offsets: [], selection: {ranges: []}});
+    this.componentDidUpdate({
+      textId: 0,
+      scrollTop: 0,
+      text: '',
+      offsets: [],
+      selection: {ranges: []},
+      operationToApply: new ot.TextOperation()
+    });
 
     if (!this.props.glContainer.isHidden && this.props.chapter.text == this.props.textId) {
       window.cm = this.cm;
@@ -92,8 +99,8 @@ class CodeMirrorTextFrame extends React.Component {
       this.cmAdapter.ignoreNextChange = true;
       this.cm.setValue(this.props.text);
     }
-    if (this.props.operationToApply) {
-      this.cmAdapter.applyOperation(ot.TextOperation.fromJSON(this.props.operationToApply));
+    if (prevProps.operationToApply != this.props.operationToApply && !this.props.operationToApply.equals(prevProps.operationToApply)) {
+      this.cmAdapter.applyOperation(this.props.operationToApply);
     }
     if (this.cm.getScrollInfo().top != this.props.scrollTop) {
       this.ignoreNextScroll = true;

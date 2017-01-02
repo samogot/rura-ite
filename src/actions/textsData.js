@@ -111,7 +111,7 @@ export function applyOperationFromCM(id, operation) {
 export function applyOperationFromCode(id, operation) {
   return [
     {
-      type: T.TEXTS_DATA.APPLY_OPERATION_TO_CM,
+      type: T.TEXTS_VIEW.APPLY_OPERATION_TO_CM,
       id: id,
       operation: operation.toJSON(),
     },

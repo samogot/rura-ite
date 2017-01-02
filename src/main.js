@@ -3,6 +3,7 @@ import reduxThunk from 'redux-thunk';
 import reduxMulti from 'redux-multi';
 import createLogger from 'redux-logger';
 import React from 'react';
+import {batchedSubscribe} from 'redux-batched-subscribe';
 import ReactDOM from 'react-dom';
 import {Provider} from 'react-redux';
 import actors from './actors';
@@ -22,6 +23,7 @@ import {bindShortcuts, mousetrap} from 'redux-shortcuts';
 import translit from 'translit';
 import translitRussian from 'translit-russian';
 import invert from 'lodash.invert';
+import debounce from 'lodash.debounce';
 const translitReverse = translit({...invert(translitRussian), 'Q': 'Ку', 'q': 'ку'});
 
 const composeEnhancers = process.env.NODE_ENV !== 'production' && window.__REDUX_DEVTOOLS_EXTENSION_COMPOSE__
@@ -42,11 +44,9 @@ const enhancer = composeEnhancers(
 
 // Ensure our listeners are only called once, even when one of the above
 // middleware call the underlying store's `dispatch` multiple times
-//   batchedSubscribe(
-//     ReactDOM.unstable_batchedUpdates
-  // notify => notify()
-  // debounce(notify => notify())
-  // ),
+  batchedSubscribe(
+    debounce(notify => notify())
+  ),
 );
 
 // Create a store with our application reducer

@@ -3,6 +3,8 @@ import * as actions from '../actions/textsView';
 import * as dataActions from '../actions/textsData';
 import {defaultItem} from '../reducers/view/textsViewReducer';
 import TextOperation from 'ot/lib/text-operation';
+import {connect} from 'react-redux';
+import CodeMirrorTextFrame from '../components/CodeMirrorTextFrame';
 
 export function mapStateToProps(state, ownProps, textId) {
   const textView = state.view.texts[textId] || defaultItem;
@@ -31,3 +33,20 @@ export function mapDispatchToProps(dispatch) {
   };
 }
 
+
+export const MainTextContainer = connect((state, ownProps) => {
+  const textId = state.data.chapters[ownProps.chapter].text;
+  return {
+    ...mapStateToProps(state, ownProps, textId),
+    chapter: state.data.chapters[ownProps.chapter],
+  };
+}, mapDispatchToProps)(CodeMirrorTextFrame);
+
+
+export const OrigTextContainer = connect((state, ownProps) => {
+  const textId = state.data.chapters[state.view.texts.activeChapter].langs[ownProps.lang];
+  return {
+    ...mapStateToProps(state, ownProps, textId),
+    chapter: state.data.chapters[state.view.texts.activeChapter],
+  };
+}, mapDispatchToProps)(CodeMirrorTextFrame);

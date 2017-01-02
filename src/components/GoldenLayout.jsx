@@ -2,9 +2,7 @@ import './GoldenLayout.styl';
 import React, {PropTypes} from 'react';
 import {pacomoDecorator} from '../utils/pacomo';
 import GoldenLayoutItemComponentReduxWrapper from './GoldenLayoutItemComponentReduxWrapper';
-import MainTextContainer from '../containers/MainTextContainer';
-import OrigTextContainer from '../containers/OrigTextContainer';
-import TestItem from './TestItem';
+import {MainTextContainer, OrigTextContainer} from '../containers/CodeMirrorTextFrameContainer';
 import GoldenLayoutLib from 'golden-layout';
 import {connect} from 'react-redux';
 import storeShape from 'react-redux/lib/utils/storeShape';
@@ -24,7 +22,6 @@ class GoldenLayout extends React.Component {
 
   componentDidMount() {
     this.gl = new GoldenLayoutLib(this.props.config, this.refs.container);
-    this.gl.registerComponent('redux-component', GoldenLayoutItemComponentReduxWrapper(TestItem));
     this.gl.registerComponent('text-main-component', GoldenLayoutItemComponentReduxWrapper(MainTextContainer));
     this.gl.registerComponent('text-orig-component', GoldenLayoutItemComponentReduxWrapper(OrigTextContainer));
     if (!this.gl.isSubWindow) {

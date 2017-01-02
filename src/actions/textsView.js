@@ -1,5 +1,12 @@
 import T from '../constants/ACTION_TYPES';
 import makeDebouncedActionCreator from '../utils/makeDebouncedActionCreator';
+import {
+  getConfigScrollWheelBehaviour,
+  getConfigScrollWheelAmount,
+  getConfigScrollAnchorSelection,
+  getTextSelection
+} from '../reducers';
+import SCROLL_CONFIG from '../constants/SCROLL_CONFIG';
 
 export function selectActiveChapter(id) {
   return [
@@ -50,10 +57,14 @@ export function updateSelectionOnly(id, selection) {
 }
 
 export function updateSelection(id, selection) {
-  return [
-    updateSelectionOnly(id, selection),
-    syncSelection(id),
-  ]
+  return (dispatch, getState) => {
+    const state = getState();
+    dispatch(updateSelectionOnly(id, selection));
+    if (selection.ranges[0].line != getTextSelection(state, id).ranges[0].line) {
+      dispatch(syncSelection(id));
+      dispatch(scrollToSelectionConditional(id));
+    }
+  };
 }
 
 export function recalcOffsets() {
@@ -148,6 +159,28 @@ export function scrollParagraph(id, ammount) {
   ];
 }
 
+export function scrollWheel(textId, direction, scrollTop, lineHeight, onSuccess) {
+  return (dispatch, getState) => {
+    const state = getState();
+    const wheelBehaviour = getConfigScrollWheelBehaviour(state);
+    const wheelAmount = getConfigScrollWheelAmount(state);
+    switch (wheelBehaviour) {
+      case SCROLL_CONFIG.WHEEL_BEHAVIOUR.LINE:
+        dispatch(scrollLine(textId, wheelAmount * direction, lineHeight));
+        break;
+      case SCROLL_CONFIG.WHEEL_BEHAVIOUR.PARAGRAPH:
+        dispatch(scrollParagraph(textId, wheelAmount * direction));
+        break;
+      case SCROLL_CONFIG.WHEEL_BEHAVIOUR.PIXEL:
+        dispatch(setScroll(textId, scrollTop + wheelAmount * direction));
+        break;
+      default:
+        return;
+    }
+    onSuccess();
+  };
+}
+
 export function scrollToSelectionOnly(id) {
   return {
     type: T.TEXTS_VIEW.SCROLL_TO_SELECTION,
@@ -162,7 +195,15 @@ export function scrollToSelection(id) {
   ];
 }
 
-export const scrollToSelectionDebounced = makeDebouncedActionCreator(makeDebouncedActionCreator(scrollToSelection, 200), 300);
+export function scrollToSelectionConditional(id) {
+  return (dispatch, getState) => {
+    if (getConfigScrollAnchorSelection(getState())) {
+      dispatch(scrollToSelection(id));
+    }
+  };
+}
+
+export const scrollToSelectionConditionalDebounced = makeDebouncedActionCreator(makeDebouncedActionCreator(scrollToSelectionConditional, 200), 300);
 
 export function recalcSyncedTexts() {
   return [

@@ -10,12 +10,8 @@ import {
   getTextScrollTop,
   getTextSelection,
   getTextOffsets,
-  getTextOperationToApply,
-  getConfigScrollWheelBehaviour,
-  getConfigScrollWheelAmount,
-  getConfigScrollAnchorSelection
+  getTextOperationToApply
 } from '../reducers';
-import SCROLL_CONFIG from '../constants/SCROLL_CONFIG';
 
 function mapStateToProps(state, ownProps, textId) {
   return {
@@ -26,9 +22,6 @@ function mapStateToProps(state, ownProps, textId) {
     selection: getTextSelection(state, textId),
     operationToApply: getTextOperationToApply(state, textId),
     glContainer: ownProps.glContainer,
-    wheelBehaviour: getConfigScrollWheelBehaviour(state),
-    wheelAmount: getConfigScrollWheelAmount(state),
-    anchorSelection: getConfigScrollAnchorSelection(state),
   };
 }
 
@@ -49,23 +42,12 @@ function mapDispatchToProps(dispatch) {
         event.preventDefault();
       }
     },
-    onWheel: (textId, wheelBehaviour, wheelAmount, scrollTop, event, lineHeight) => {
+    onWheel: (textId, scrollTop, event, lineHeight) => {
       const direction = Math.sign(event.deltaY);
-      switch (wheelBehaviour) {
-        case SCROLL_CONFIG.WHEEL_BEHAVIOUR.LINE:
-          actions.scrollLine(textId, wheelAmount * direction, lineHeight);
-          break;
-        case SCROLL_CONFIG.WHEEL_BEHAVIOUR.PARAGRAPH:
-          actions.scrollParagraph(textId, wheelAmount * direction);
-          break;
-        case SCROLL_CONFIG.WHEEL_BEHAVIOUR.PIXEL:
-          actions.setScroll(textId, scrollTop + wheelAmount * direction);
-          break;
-        default:
-          return;
-      }
-      event.stopPropagation();
-      event.preventDefault();
+      actions.scrollWheel(textId, direction, scrollTop, lineHeight, () => {
+        event.stopPropagation();
+        event.preventDefault();
+      });
     }
   };
 }
@@ -78,7 +60,7 @@ function mergeProps(stateProps, dispatchProps, ownProps) {
     }
   }
   newProps.onFocus = dispatchProps.onFocus.bind(null, stateProps.textId, ownProps.chapter);
-  newProps.onWheel = dispatchProps.onWheel.bind(null, stateProps.textId, stateProps.wheelBehaviour, stateProps.wheelAmount, stateProps.scrollTop);
+  newProps.onWheel = dispatchProps.onWheel.bind(null, stateProps.textId, stateProps.scrollTop);
   return newProps;
 }
 

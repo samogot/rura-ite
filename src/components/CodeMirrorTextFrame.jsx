@@ -86,7 +86,6 @@ class CodeMirrorTextFrame extends React.Component {
   }
 
   componentDidUpdate(prevProps) {
-    // console.log('componentDidUpdate', this.props.textId, prevProps.scrollTop, this.props.scrollTop, this.cm.getScrollInfo().top);
     if (this.props.textId != prevProps.textId && this.cm.getValue() != this.props.text) {
       this.cmAdapter.ignoreNextChange = true;
       this.cm.setValue(this.props.text);
@@ -111,7 +110,6 @@ class CodeMirrorTextFrame extends React.Component {
       }
     }
     if (this.props.offsets != prevProps.offsets) {
-      // console.log(this.alignMarks);
       const length = Math.min(this.props.offsets.length, this.cm.lineCount());
       this.cm.operation(() => {
         for (let i = 0; i < length; ++i) {
@@ -145,6 +143,11 @@ class CodeMirrorTextFrame extends React.Component {
     this.props.onFocus();
   }
 
+  onWheel(e) {
+    const cursorCoords = this.cm.cursorCoords('local');
+    this.props.onWheel(e, cursorCoords.bottom - cursorCoords.top);
+  }
+
   onChange(operation, invertedOperation) {
     this.onHeightChange();
     this.props.applyOperationFromCM(operation);
@@ -169,31 +172,8 @@ class CodeMirrorTextFrame extends React.Component {
         this.alignMarks[i] = null;
       }
       this.props.updateOffsets(offsets);
-      this.props.scrollToSelectionDebounced();
+      this.props.scrollToSelectionConditionalDebounced();
     }
-  }
-
-  getViewportLinesHeights() {
-    const viewport = this.cm.getViewport();
-    const heights = [];
-    if (viewport.from < viewport.to) {
-      this.cm.eachLine(viewport.from, viewport.to, line => {
-        heights.push(this.cm.heightAtLine(line, 'local'));
-      });
-    }
-    heights.push(this.cm.heightAtLine(viewport.to, 'local'));
-    return {viewport, heights};
-  }
-
-  onHeightChange() {
-    const {viewport, heights} = this.getViewportLinesHeights();
-    const scrollInfo = this.cm.getScrollInfo();
-    this.props.updateLinesHeights(viewport, heights, scrollInfo.height, this.cm.lineCount());
-  }
-
-  onWheel(e) {
-    const cursorCoords = this.cm.cursorCoords('local');
-    this.props.onWheel(e, cursorCoords.bottom - cursorCoords.top);
   }
 
   onScroll() {
@@ -213,14 +193,26 @@ class CodeMirrorTextFrame extends React.Component {
       const selection = this.cmAdapter.getSelection();
       const CMSelections = this.cm.listSelections();
       selection.ranges.forEach((r, i) => {r.line = CMSelections[i].head.line});
-      this.props.updateSelectionOnly(selection);
-      if (selection.ranges[0].line != this.props.selection.ranges[0].line) {
-        this.props.syncSelection();
-        if (this.props.anchorSelection) {
-          this.props.scrollToSelection();
-        }
-      }
+      this.props.updateSelection(selection);
     }
+  }
+
+  getViewportLinesHeights() {
+    const viewport = this.cm.getViewport();
+    const heights = [];
+    if (viewport.from < viewport.to) {
+      this.cm.eachLine(viewport.from, viewport.to, line => {
+        heights.push(this.cm.heightAtLine(line, 'local'));
+      });
+    }
+    heights.push(this.cm.heightAtLine(viewport.to, 'local'));
+    return {viewport, heights};
+  }
+
+  onHeightChange() {
+    const {viewport, heights} = this.getViewportLinesHeights();
+    const scrollInfo = this.cm.getScrollInfo();
+    this.props.updateLinesHeights(viewport, heights, scrollInfo.height, this.cm.lineCount());
   }
 
   onResize() {
@@ -244,9 +236,25 @@ class CodeMirrorTextFrame extends React.Component {
     text: React.PropTypes.string.isRequired,
     textId: React.PropTypes.number.isRequired,
     scrollTop: React.PropTypes.number.isRequired,
-    // scrollSetAt: React.PropTypes.number.isRequired,
-    // onFocus: React.PropTypes.func,
-    // updateLinesHeights: React.PropTypes.func.isRequired,
+    operationToApply: React.PropTypes.instanceOf(ot.TextOperation).isRequired,
+    selection: React.PropTypes.shape({
+      ranges: React.PropTypes.arrayOf(React.PropTypes.shape({
+        line: React.PropTypes.number.isRequired,
+        anchor: React.PropTypes.number,
+        head: React.PropTypes.number,
+      })).isRequired,
+    }).isRequired,
+    offsets: React.PropTypes.arrayOf(React.PropTypes.number).isRequired,
+    onFocus: React.PropTypes.func.isRequired,
+    onPaste: React.PropTypes.func.isRequired,
+    onWheel: React.PropTypes.func.isRequired,
+    applyOperationFromCM: React.PropTypes.func.isRequired,
+    updateOffsets: React.PropTypes.func.isRequired,
+    scrollToSelectionConditionalDebounced: React.PropTypes.func.isRequired,
+    setScroll: React.PropTypes.func.isRequired,
+    updateLinesHeights: React.PropTypes.func.isRequired,
+    updateAllHeights: React.PropTypes.func.isRequired,
+    updateSelection: React.PropTypes.func.isRequired,
   };
 }
 

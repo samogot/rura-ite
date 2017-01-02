@@ -1,52 +1,90 @@
 import {bindActionCreators} from 'redux';
 import * as actions from '../actions/textsView';
 import * as dataActions from '../actions/textsData';
-import {defaultItem} from '../reducers/view/textsViewReducer';
-import TextOperation from 'ot/lib/text-operation';
 import {connect} from 'react-redux';
 import CodeMirrorTextFrame from '../components/CodeMirrorTextFrame';
+import {
+  getMainTextId,
+  getOrigTextId,
+  getTextWiki,
+  getTextScrollTop,
+  getTextSelection,
+  getTextOffsets,
+  getTextOperationToApply,
+  getConfigScrollWheelBehaviour,
+  getConfigScrollWheelAmount,
+  getConfigScrollAnchorSelection
+} from '../reducers';
+import SCROLL_CONFIG from '../constants/SCROLL_CONFIG';
 
-export function mapStateToProps(state, ownProps, textId) {
-  const textView = state.view.texts[textId] || defaultItem;
+function mapStateToProps(state, ownProps, textId) {
   return {
     textId: textId,
-    text: state.data.texts[textId].wiki,
-    scrollTop: textView.scrollInfo.top,
-    offsets: textView.offsets,
-    selection: textView.selection,
+    text: getTextWiki(state, textId),
+    scrollTop: getTextScrollTop(state, textId),
+    offsets: getTextOffsets(state, textId),
+    selection: getTextSelection(state, textId),
+    operationToApply: getTextOperationToApply(state, textId),
     glContainer: ownProps.glContainer,
-    wheelBehaviour: state.data.config.scroll.wheelBehaviour,
-    wheelAmount: state.data.config.scroll.wheelAmount,
-    anchorSelection: state.data.config.scroll.anchorSelection,
-    operationToApply: TextOperation.fromJSON(textView.operationToApply),
+    wheelBehaviour: getConfigScrollWheelBehaviour(state),
+    wheelAmount: getConfigScrollWheelAmount(state),
+    anchorSelection: getConfigScrollAnchorSelection(state),
   };
 }
 
-export function mapDispatchToProps(dispatch) {
+function mapDispatchToProps(dispatch) {
   return {
     ...bindActionCreators(actions, dispatch),
     ...bindActionCreators(dataActions, dispatch),
-    updateLinesHeightsAndText: (id, heights, fullHeight, text) => dispatch([
-      actions.updateLinesHeights(id, heights, fullHeight),
-      dataActions.saveText(id, text),
-    ]),
+    onFocus: (textId, chapterId) => {
+      if (chapterId) {
+        dispatch(actions.selectActiveChapterDebounce(chapterId));
+      }
+      dispatch(actions.selectActiveTextDebounce(textId));
+    },
+    onPaste: (textId, _, event) => {
+      const html = event.clipboardData.getData('text/html');
+      if (html) {
+        dataActions.pasteHtml(textId, html);
+        event.preventDefault();
+      }
+    },
+    onWheel: (textId, wheelBehaviour, wheelAmount, scrollTop, event, lineHeight) => {
+      const direction = Math.sign(event.deltaY);
+      switch (wheelBehaviour) {
+        case SCROLL_CONFIG.WHEEL_BEHAVIOUR.LINE:
+          actions.scrollLine(textId, wheelAmount * direction, lineHeight);
+          break;
+        case SCROLL_CONFIG.WHEEL_BEHAVIOUR.PARAGRAPH:
+          actions.scrollParagraph(textId, wheelAmount * direction);
+          break;
+        case SCROLL_CONFIG.WHEEL_BEHAVIOUR.PIXEL:
+          actions.setScroll(textId, scrollTop + wheelAmount * direction);
+          break;
+        default:
+          return;
+      }
+      event.stopPropagation();
+      event.preventDefault();
+    }
   };
 }
 
+function mergeProps(stateProps, dispatchProps, ownProps) {
+  const newProps = stateProps;
+  for (let prop in dispatchProps) {
+    if (dispatchProps.hasOwnProperty(prop)) {
+      newProps[prop] = dispatchProps[prop].bind(null, stateProps.textId);
+    }
+  }
+  newProps.onFocus = dispatchProps.onFocus.bind(null, stateProps.textId, ownProps.chapter);
+  newProps.onWheel = dispatchProps.onWheel.bind(null, stateProps.textId, stateProps.wheelBehaviour, stateProps.wheelAmount, stateProps.scrollTop);
+  return newProps;
+}
 
-export const MainTextContainer = connect((state, ownProps) => {
-  const textId = state.data.chapters[ownProps.chapter].text;
-  return {
-    ...mapStateToProps(state, ownProps, textId),
-    chapter: state.data.chapters[ownProps.chapter],
-  };
-}, mapDispatchToProps)(CodeMirrorTextFrame);
+function makeTextContainer(idSelector) {
+  return connect((state, ownProps) => mapStateToProps(state, ownProps, idSelector(state, ownProps)), mapDispatchToProps, mergeProps)(CodeMirrorTextFrame)
+}
 
-
-export const OrigTextContainer = connect((state, ownProps) => {
-  const textId = state.data.chapters[state.view.texts.activeChapter].langs[ownProps.lang];
-  return {
-    ...mapStateToProps(state, ownProps, textId),
-    chapter: state.data.chapters[state.view.texts.activeChapter],
-  };
-}, mapDispatchToProps)(CodeMirrorTextFrame);
+export const MainTextContainer = makeTextContainer(getMainTextId);
+export const OrigTextContainer = makeTextContainer(getOrigTextId);

@@ -22,7 +22,6 @@ export const defaultItem = {
       anchor: 0,
     }]
   },
-  operationToApply: [],
 };
 
 const oneItemReducer = typeReducers(ACTION_TYPES.TEXTS_VIEW, defaultItem, {
@@ -130,10 +129,6 @@ const oneItemReducer = typeReducers(ACTION_TYPES.TEXTS_VIEW, defaultItem, {
       },
     }
   },
-  APPLY_OPERATION_TO_CM: (state, {operation}) => ({
-    ...state,
-    operationToApply: operation,
-  }),
 });
 
 
@@ -704,5 +699,10 @@ export default typeReducers(ACTION_TYPES.TEXTS_VIEW, defaultState, {
   SCROLL_LINE: delegateReducerById(oneItemReducer),
   SCROLL_PARAGRAPH: delegateReducerById(oneItemReducer),
   SCROLL_TO_SELECTION: delegateReducerById(oneItemReducer),
-  APPLY_OPERATION_TO_CM: delegateReducerById(oneItemReducer),
 })
+
+export const getText = (state, id) => state[id] || defaultItem;
+export const getActiveChapterId = (state) => state.activeChapter;
+export const getTextScrollTop = (state, id) => getText(state, id).scrollInfo.top;
+export const getTextSelection = (state, id) => getText(state, id).selection;
+export const getTextOffsets = (state, id) => getText(state, id).offsets;

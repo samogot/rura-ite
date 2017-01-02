@@ -2,6 +2,7 @@ import typeReducers from '../../utils/typeReducers';
 import delegateReducerById from '../../utils/delegateReducerById';
 import ACTION_TYPES from '../../constants/ACTION_TYPES';
 import TextOperation from 'ot/lib/text-operation';
+import createSelectorById from '../../utils/createSelectorById';
 
 
 const defaultItem = {
@@ -13,7 +14,8 @@ const defaultItem = {
     state: {
       type: 'synchronized',
     },
-  }
+  },
+  operationToApply: [],
 };
 
 
@@ -30,6 +32,10 @@ const oneItemReducer = typeReducers(ACTION_TYPES.TEXTS_DATA, defaultItem, {
   APPLY_OPERATION_TO_STORE: (state, {operation}) => ({
     ...state,
     wiki: TextOperation.fromJSON(operation).apply(state.wiki),
+  }),
+  APPLY_OPERATION_TO_CM: (state, {operation}) => ({
+    ...state,
+    operationToApply: operation,
   }),
   SAVE_CLIENT_STATE: (state, {client}) => ({
     ...state,
@@ -228,5 +234,11 @@ export default typeReducers(ACTION_TYPES.TEXTS_DATA, defaultState, {
   ADD: delegateReducerById(oneItemReducer),
   REMOVE: delegateReducerById(oneItemReducer),
   APPLY_OPERATION_TO_STORE: delegateReducerById(oneItemReducer),
+  APPLY_OPERATION_TO_CM: delegateReducerById(oneItemReducer),
   SAVE_CLIENT_STATE: delegateReducerById(oneItemReducer),
 });
+
+export const getText = (state, id) => state[id] || defaultItem;
+export const getTextWiki = (state, id) => getText(state, id).wiki;
+export const getTextOperation = (state, id) => getText(state, id).operationToApply;
+export const getTextOperationToApply = createSelectorById(getTextOperation, operation => TextOperation.fromJSON(operation));

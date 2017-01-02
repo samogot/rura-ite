@@ -26,7 +26,6 @@ export default defineActionTypes({
     RECALC_SYNCED_TEXTS
     RECALC_ALIGNED_TEXT_SETS
     RECALC_LINE_MERGES
-    APPLY_OPERATION_TO_CM
   `,
 
   /*
@@ -46,6 +45,7 @@ export default defineActionTypes({
     DISUNITE_NEXT_SRC_LINE
     UNIT_NEXT_SRC_LINE
     APPLY_OPERATION_TO_STORE
+    APPLY_OPERATION_TO_CM
     SAVE_CLIENT_STATE
     PASTE_HTML
   `,

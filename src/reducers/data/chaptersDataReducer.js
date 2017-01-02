@@ -18,11 +18,14 @@ const oneItemReducer = typeReducers(ACTION_TYPES.CHAPTERS_DATA, defaultItem, {
   REMOVE: () => null
 });
 
-const defaultState = {
-};
+const defaultState = {};
 
 export default typeReducers(ACTION_TYPES.CHAPTERS_DATA, defaultState, {
   UPDATE: delegateReducerById(oneItemReducer),
   ADD: delegateReducerById(oneItemReducer),
   REMOVE: delegateReducerById(oneItemReducer),
 });
+
+export const getChapter = (state, id) => state[id] || defaultItem;
+export const getChapterMainTextId = (state, id) => getChapter(state, id).text;
+export const getChapterLangTextId = (state, {id, lang}) => getChapter(state, id).langs[lang];

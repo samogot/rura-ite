@@ -6,14 +6,8 @@ import CodeMirror from 'codemirror';
 import {pacomoDecorator} from '../utils/pacomo';
 import throttle from 'lodash.throttle';
 import debounce from 'lodash.debounce';
-import SCROLL_CONFIG from '../constants/SCROLL_CONFIG';
 global.ot = global.ot || require('ot');
 require('ot/lib/codemirror-adapter');
-
-function normalizeLineEndings(str) {
-  if (!str) return str;
-  return str.replace(/\r\n|\r/g, '\n');
-}
 
 class CodeMirrorTextFrame extends React.Component {
 
@@ -22,7 +16,6 @@ class CodeMirrorTextFrame extends React.Component {
     this.refreshCM = this.refreshCM.bind(this);
     this.onPaste = this.onPaste.bind(this);
     this.onFocus = this.onFocus.bind(this);
-    this.onShow = this.onShow.bind(this);
     this.onChange = this.onChange.bind(this);
     this.onHeightChange = debounce(this.onHeightChange.bind(this), 200);
     this.onScroll = throttle(this.onScroll.bind(this), 16);
@@ -54,7 +47,7 @@ class CodeMirrorTextFrame extends React.Component {
     this.props.glContainer.on('show', this.refreshCM);
     this.props.glContainer.on('resize', this.refreshCM);
     this.props.glContainer.on('resize', this.onResize);
-    this.props.glContainer.on('show', this.onShow);
+    this.props.glContainer.on('show', this.onFocus);
     this.cm.on("paste", this.onPaste);
     this.cm.on('focus', this.onFocus);
     this.cm.on("scroll", this.onScroll);
@@ -69,9 +62,8 @@ class CodeMirrorTextFrame extends React.Component {
       operationToApply: new ot.TextOperation()
     });
 
-    if (!this.props.glContainer.isHidden && this.props.chapter.text == this.props.textId) {
-      window.cm = this.cm;
-    }
+    window.cm = window.cm || {};
+    window.cm[this.props.textId] = this.cm;
   }
 
   componentWillUnmount() {
@@ -80,7 +72,7 @@ class CodeMirrorTextFrame extends React.Component {
     this.props.glContainer.off('show', this.refreshCM);
     this.props.glContainer.off('resize', this.refreshCM);
     this.props.glContainer.off('resize', this.onResize);
-    this.props.glContainer.off('show', this.onShow);
+    this.props.glContainer.off('show', this.onFocus);
     this.cm.off("paste", this.onPaste);
     this.cm.off('focus', this.onFocus);
     this.cm.off("scroll", this.onScroll);
@@ -145,31 +137,17 @@ class CodeMirrorTextFrame extends React.Component {
     }
   }
 
-  onPaste(_, event) {
-    const html = event.clipboardData.getData('text/html');
-    if (html) {
-      this.props.pasteHtml(this.props.textId, html);
-      event.preventDefault();
-    }
-  }
-
-  onShow() {
-    if (this.props.chapter.text == this.props.textId) {
-      this.props.selectActiveChapterDebounce(this.props.chapter.id);
-    }
-    this.props.selectActiveTextDebounce(this.props.textId);
+  onPaste() {
+    this.props.onPaste();
   }
 
   onFocus() {
-    if (this.props.chapter.text == this.props.textId) {
-      this.props.selectActiveChapter(this.props.chapter.id);
-    }
-    this.props.selectActiveTextDebounce(this.props.textId);
+    this.props.onFocus();
   }
 
   onChange(operation, invertedOperation) {
     this.onHeightChange();
-    this.props.applyOperationFromCM(this.props.textId, operation);
+    this.props.applyOperationFromCM(operation);
     if (this.cm.lineCount() != this.props.offsets.length) {
       const offsets = [];
       const viewport = this.cm.getViewport();
@@ -190,8 +168,8 @@ class CodeMirrorTextFrame extends React.Component {
       for (let i = this.cm.lineCount(); i < this.alignMarks.length; ++i) {
         this.alignMarks[i] = null;
       }
-      this.props.updateOffsets(this.props.textId, offsets);
-      this.props.scrollToSelectionDebounced(this.props.textId);
+      this.props.updateOffsets(offsets);
+      this.props.scrollToSelectionDebounced();
     }
   }
 
@@ -210,27 +188,12 @@ class CodeMirrorTextFrame extends React.Component {
   onHeightChange() {
     const {viewport, heights} = this.getViewportLinesHeights();
     const scrollInfo = this.cm.getScrollInfo();
-    this.props.updateLinesHeights(this.props.textId, viewport, heights, scrollInfo.height, this.cm.lineCount());
+    this.props.updateLinesHeights(viewport, heights, scrollInfo.height, this.cm.lineCount());
   }
 
   onWheel(e) {
-    const direction = Math.sign(e.deltaY);
-    switch (this.props.wheelBehaviour) {
-      case SCROLL_CONFIG.WHEEL_BEHAVIOUR.LINE:
-        const cursorCoords = this.cm.cursorCoords('local');
-        this.props.scrollLine(this.props.textId, this.props.wheelAmount * direction, cursorCoords.bottom - cursorCoords.top);
-        break;
-      case SCROLL_CONFIG.WHEEL_BEHAVIOUR.PARAGRAPH:
-        this.props.scrollParagraph(this.props.textId, this.props.wheelAmount * direction);
-        break;
-      case SCROLL_CONFIG.WHEEL_BEHAVIOUR.PIXEL:
-        this.props.setScroll(this.props.textId, this.props.scrollTop + this.props.wheelAmount * direction);
-        break;
-      default:
-        return;
-    }
-    e.stopPropagation();
-    e.preventDefault();
+    const cursorCoords = this.cm.cursorCoords('local');
+    this.props.onWheel(e, cursorCoords.bottom - cursorCoords.top);
   }
 
   onScroll() {
@@ -238,7 +201,7 @@ class CodeMirrorTextFrame extends React.Component {
       this.ignoreNextScroll = false;
     }
     else {
-      this.props.setScroll(this.props.textId, this.cm.getScrollInfo().top);
+      this.props.setScroll(this.cm.getScrollInfo().top);
     }
   }
 
@@ -250,11 +213,11 @@ class CodeMirrorTextFrame extends React.Component {
       const selection = this.cmAdapter.getSelection();
       const CMSelections = this.cm.listSelections();
       selection.ranges.forEach((r, i) => {r.line = CMSelections[i].head.line});
-      this.props.updateSelectionOnly(this.props.textId, selection);
+      this.props.updateSelectionOnly(selection);
       if (selection.ranges[0].line != this.props.selection.ranges[0].line) {
-        this.props.syncSelection(this.props.textId);
+        this.props.syncSelection();
         if (this.props.anchorSelection) {
-          this.props.scrollToSelection(this.props.textId);
+          this.props.scrollToSelection();
         }
       }
     }
@@ -264,7 +227,7 @@ class CodeMirrorTextFrame extends React.Component {
     if (!this.props.glContainer.isHidden) {
       const {viewport, heights} = this.getViewportLinesHeights();
       const scrollInfo = this.cm.getScrollInfo();
-      this.props.updateAllHeights(this.props.textId, viewport, heights, scrollInfo);
+      this.props.updateAllHeights(viewport, heights, scrollInfo);
     }
   }
 
@@ -290,6 +253,5 @@ class CodeMirrorTextFrame extends React.Component {
 
 export default pacomoDecorator(CodeMirrorTextFrame);
 
-//TODO copy handler
 //TODO menu, toolbar, options
 //TODO react-intl

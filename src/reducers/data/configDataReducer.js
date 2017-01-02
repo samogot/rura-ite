@@ -32,3 +32,7 @@ export default typeReducers(ACTION_TYPES.CONFIG_DATA, defaultState, {
     },
   }),
 })
+
+export const getConfigScrollWheelBehaviour = (state) => scroll.wheelBehaviour;
+export const getConfigScrollWheelAmount = (state) => scroll.wheelAmount;
+export const getConfigScrollAnchorSelection = (state) => scroll.anchorSelection;

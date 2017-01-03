@@ -5,7 +5,7 @@ import {
   getConfigScrollWheelAmount,
   getConfigScrollAnchorSelection,
   getTextSelection
-} from '../reducers';
+} from '../reducers/selectors';
 import SCROLL_CONFIG from '../constants/SCROLL_CONFIG';
 
 export function selectActiveChapter(id) {

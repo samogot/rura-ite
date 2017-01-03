@@ -42,4 +42,6 @@ export const getConfigScrollWheelAmount = (state) => state.scroll.wheelAmount;
 export const getConfigScrollAnchorSelection = (state) => state.scroll.anchorSelection;
 export const getConfigScrollExtraBottomHeight = (state) => state.scroll.extraBottomHeight;
 
+export const getConfigSrcLangs = (state) => state.srcLang;
+
 export const getConfigSrcForLang = (state, lang) => state.srcLang[lang];

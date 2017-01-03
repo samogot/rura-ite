@@ -11,7 +11,7 @@ import {
   getTextSelection,
   getTextOffsets,
   getTextOperationToApply
-} from '../reducers';
+} from '../reducers/selectors';
 
 function mapStateToProps(state, ownProps, textId) {
   return {

@@ -3,7 +3,7 @@ import delegateReducerById from '../../utils/delegateReducerById';
 import ACTION_TYPES from '../../constants/ACTION_TYPES';
 import TextOperation from 'ot/lib/text-operation';
 import createSelectorById from '../../utils/createSelectorById';
-import {getFocusedTextId, getSyncedTexts, getConfigSrcForLang, getTextSelection} from '../../reducers';
+import {getFocusedTextId, getSyncedTexts, getConfigSrcForLang, getTextSelection} from '../selectors';
 
 
 const defaultItem = {

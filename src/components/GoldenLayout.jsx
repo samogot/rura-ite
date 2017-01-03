@@ -63,12 +63,18 @@ class GoldenLayout extends React.Component {
   subscribeChanges() {
     const changeListner = debounce(() => {
       if (this.gl.isInitialised && this.gl.openPopouts.every((w) => w.isInitialised)) {
-        this.props.saveLayout(this.gl.toConfig())
+        this.props.saveLayout(this.gl.toConfig());
+      }
+      else {
+        changeListner();
       }
     }, 1000, {leading: true, trailing: true});
 
     this.gl.on('stateChanged', changeListner);
-    this.unsubscribeChanges = () => this.gl.off('stateChanged', changeListner);
+    this.unsubscribeChanges = () => {
+      this.gl.off('stateChanged', changeListner);
+      changeListner.cancel();
+    };
   }
 
   onResize() {

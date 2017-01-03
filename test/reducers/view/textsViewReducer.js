@@ -1,5 +1,5 @@
 import expect from 'expect';
-import reducers from '../../../src/reducers';
+import reducers, {getLineMerges} from '../../../src/reducers';
 import {mergeAtLine} from '../../../src/reducers/view/textsViewReducer';
 
 describe('textsViewReducer.js', () => {
@@ -21,7 +21,7 @@ describe('textsViewReducer.js', () => {
         },
         {type: '@@ite/TEXTS_VIEW/RECALC_LINE_MERGES'}
       );
-      expect(state.view.texts.syncData.lineMerges).toEqual([]);
+      expect(getLineMerges(state)).toEqual([]);
     });
 
     it('should handle one simpe two-way unmerge with src propagation', () => {
@@ -43,7 +43,7 @@ describe('textsViewReducer.js', () => {
         },
         {type: '@@ite/TEXTS_VIEW/RECALC_LINE_MERGES'}
       );
-      expect(state.view.texts.syncData.lineMerges).toEqual([
+      expect(getLineMerges(state)).toEqual([
         {'1': {from: 1, to: 2}, '2': {from: 1, to: 2}, '3': {from: 1, to: 3}}
       ]);
     });
@@ -67,7 +67,7 @@ describe('textsViewReducer.js', () => {
         },
         {type: '@@ite/TEXTS_VIEW/RECALC_LINE_MERGES'}
       );
-      expect(state.view.texts.syncData.lineMerges).toEqual([
+      expect(getLineMerges(state)).toEqual([
         {'1': {from: 1, to: 2}, '2': {from: 1, to: 3}, '3': {from: 1, to: 3}}
       ]);
     });
@@ -91,7 +91,7 @@ describe('textsViewReducer.js', () => {
         },
         {type: '@@ite/TEXTS_VIEW/RECALC_LINE_MERGES'}
       );
-      expect(state.view.texts.syncData.lineMerges).toEqual([
+      expect(getLineMerges(state)).toEqual([
         {'1': {from: 1, to: 3}, '2': {from: 1, to: 3}, '3': {from: 1, to: 2}}
       ]);
     });
@@ -115,7 +115,7 @@ describe('textsViewReducer.js', () => {
         },
         {type: '@@ite/TEXTS_VIEW/RECALC_LINE_MERGES'}
       );
-      expect(state.view.texts.syncData.lineMerges).toEqual([
+      expect(getLineMerges(state)).toEqual([
         {'1': {from: 1, to: 3}, '2': {from: 1, to: 2}, '3': {from: 1, to: 2}}
       ]);
     });
@@ -139,7 +139,7 @@ describe('textsViewReducer.js', () => {
         },
         {type: '@@ite/TEXTS_VIEW/RECALC_LINE_MERGES'}
       );
-      expect(state.view.texts.syncData.lineMerges).toEqual([
+      expect(getLineMerges(state)).toEqual([
         {'1': {from: 1, to: 4}, '2': {from: 1, to: 3}, '3': {from: 1, to: 3}}
       ]);
     });
@@ -183,7 +183,7 @@ describe('textsViewReducer.js', () => {
         },
         {type: '@@ite/TEXTS_VIEW/RECALC_LINE_MERGES'}
       );
-      expect(state.view.texts.syncData.lineMerges).toEqual([
+      expect(getLineMerges(state)).toEqual([
         {
           '1': {from: 1, to: 3},
           '2': {from: 1, to: 3},
@@ -238,7 +238,7 @@ describe('textsViewReducer.js', () => {
         },
         {type: '@@ite/TEXTS_VIEW/RECALC_LINE_MERGES'}
       );
-      expect(state.view.texts.syncData.lineMerges).toEqual([
+      expect(getLineMerges(state)).toEqual([
         {
           '1': {from: 1, to: 3},
           '2': {from: 1, to: 3},
@@ -274,7 +274,7 @@ describe('textsViewReducer.js', () => {
         },
         {type: '@@ite/TEXTS_VIEW/RECALC_LINE_MERGES'}
       );
-      expect(state.view.texts.syncData.lineMerges).toEqual([
+      expect(getLineMerges(state)).toEqual([
         {'1': {from: 1, to: 2}, '2': {from: 1, to: 2}, '3': {from: 1, to: 3}},
         {'1': {from: 5, to: 7}, '2': {from: 5, to: 7}, '3': {from: 6, to: 7}}
       ]);
@@ -303,7 +303,7 @@ describe('textsViewReducer.js', () => {
         },
         {type: '@@ite/TEXTS_VIEW/RECALC_LINE_MERGES'}
       );
-      expect(state.view.texts.syncData.lineMerges).toEqual([
+      expect(getLineMerges(state)).toEqual([
         {'1': {from: 1, to: 8}, '2': {from: 1, to: 8}, '3': {from: 1, to: 2}},
         {'1': {from: 8, to: 9}, '2': {from: 8, to: 10}, '3': {from: 2, to: 4}}
       ]);
@@ -337,7 +337,7 @@ describe('textsViewReducer.js', () => {
         },
         {type: '@@ite/TEXTS_VIEW/RECALC_LINE_MERGES'}
       );
-      expect(state.view.texts.syncData.lineMerges).toEqual([
+      expect(getLineMerges(state)).toEqual([
         {'1': {from: 1, to: 2}, '2': {from: 1, to: 2}, '3': {from: 1, to: 8}, '4': {from: 1, to: 8}},
         {'1': {from: 2, to: 3}, '2': {from: 2, to: 3}, '3': {from: 8, to: 9}, '4': {from: 8, to: 10}},
         {'1': {from: 3, to: 4}, '2': {from: 3, to: 5}, '3': {from: 9, to: 11}, '4': {from: 10, to: 12}}
@@ -367,7 +367,7 @@ describe('textsViewReducer.js', () => {
         },
         {type: '@@ite/TEXTS_VIEW/RECALC_LINE_MERGES'}
       );
-      expect(state.view.texts.syncData.lineMerges).toEqual([
+      expect(getLineMerges(state)).toEqual([
         {'1': {from: 1, to: 3}, '2': {from: 1, to: 2}, '3': {from: 1, to: 3}}
       ]);
     });
@@ -395,7 +395,7 @@ describe('textsViewReducer.js', () => {
         },
         {type: '@@ite/TEXTS_VIEW/RECALC_LINE_MERGES'}
       );
-      expect(state.view.texts.syncData.lineMerges).toEqual([
+      expect(getLineMerges(state)).toEqual([
         {'1': {from: 1, to: 2}, '2': {from: 1, to: 3}, '3': {from: 1, to: 2}}
       ]);
     });
@@ -423,7 +423,7 @@ describe('textsViewReducer.js', () => {
         },
         {type: '@@ite/TEXTS_VIEW/RECALC_LINE_MERGES'}
       );
-      expect(state.view.texts.syncData.lineMerges).toEqual([
+      expect(getLineMerges(state)).toEqual([
         {'1': {from: 1, to: 2}, '2': {from: 1, to: 3}, '3': {from: 1, to: 4}}
       ]);
     });
@@ -451,7 +451,7 @@ describe('textsViewReducer.js', () => {
         },
         {type: '@@ite/TEXTS_VIEW/RECALC_LINE_MERGES'}
       );
-      expect(state.view.texts.syncData.lineMerges).toEqual([
+      expect(getLineMerges(state)).toEqual([
         {'1': {from: 1, to: 2}, '2': {from: 1, to: 3}, '3': {from: 1, to: 4}}
       ]);
     });
@@ -479,7 +479,7 @@ describe('textsViewReducer.js', () => {
         },
         {type: '@@ite/TEXTS_VIEW/RECALC_LINE_MERGES'}
       );
-      expect(state.view.texts.syncData.lineMerges).toEqual([
+      expect(getLineMerges(state)).toEqual([
         {'1': {from: 1, to: 2}, '2': {from: 1, to: 4}, '3': {from: 1, to: 5}}
       ]);
     });
@@ -507,7 +507,7 @@ describe('textsViewReducer.js', () => {
         },
         {type: '@@ite/TEXTS_VIEW/RECALC_LINE_MERGES'}
       );
-      expect(state.view.texts.syncData.lineMerges).toEqual([
+      expect(getLineMerges(state)).toEqual([
         {'1': {from: 1, to: 3}, '2': {from: 1, to: 4}, '3': {from: 1, to: 2}}
       ]);
     });
@@ -535,7 +535,7 @@ describe('textsViewReducer.js', () => {
         },
         {type: '@@ite/TEXTS_VIEW/RECALC_LINE_MERGES'}
       );
-      expect(state.view.texts.syncData.lineMerges).toEqual([
+      expect(getLineMerges(state)).toEqual([
         {'1': {from: 1, to: 2}, '2': {from: 1, to: 4}, '3': {from: 1, to: 3}}
       ]);
     });
@@ -583,7 +583,7 @@ describe('textsViewReducer.js', () => {
         },
         {type: '@@ite/TEXTS_VIEW/RECALC_LINE_MERGES'}
       );
-      expect(state.view.texts.syncData.lineMerges).toEqual([
+      expect(getLineMerges(state)).toEqual([
         {
           '1': {from: 1, to: 3},
           '2': {from: 1, to: 3},
@@ -642,7 +642,7 @@ describe('textsViewReducer.js', () => {
         },
         {type: '@@ite/TEXTS_VIEW/RECALC_LINE_MERGES'}
       );
-      expect(state.view.texts.syncData.lineMerges).toEqual([
+      expect(getLineMerges(state)).toEqual([
         {
           '1': {from: 1, to: 3},
           '2': {from: 1, to: 3},
@@ -686,7 +686,7 @@ describe('textsViewReducer.js', () => {
         },
         {type: '@@ite/TEXTS_VIEW/RECALC_LINE_MERGES'}
       );
-      expect(state.view.texts.syncData.lineMerges).toEqual([
+      expect(getLineMerges(state)).toEqual([
         {'1': {from: 1, to: 3}, '2': {from: 1, to: 4}, '3': {from: 1, to: 3}, '4': {from: 1, to: 2}}
       ]);
     });
@@ -719,7 +719,7 @@ describe('textsViewReducer.js', () => {
         },
         {type: '@@ite/TEXTS_VIEW/RECALC_LINE_MERGES'}
       );
-      expect(state.view.texts.syncData.lineMerges).toEqual([
+      expect(getLineMerges(state)).toEqual([
         {'1': {from: 1, to: 3}, '2': {from: 1, to: 5}, '3': {from: 1, to: 4}, '4': {from: 1, to: 2}}
       ]);
     });
@@ -752,7 +752,7 @@ describe('textsViewReducer.js', () => {
         },
         {type: '@@ite/TEXTS_VIEW/RECALC_LINE_MERGES'}
       );
-      expect(state.view.texts.syncData.lineMerges).toEqual([
+      expect(getLineMerges(state)).toEqual([
         {'1': {from: 1, to: 4}, '2': {from: 1, to: 6}, '3': {from: 1, to: 4}, '4': {from: 1, to: 3}}
       ]);
     });
@@ -785,7 +785,7 @@ describe('textsViewReducer.js', () => {
         },
         {type: '@@ite/TEXTS_VIEW/RECALC_LINE_MERGES'}
       );
-      expect(state.view.texts.syncData.lineMerges).toEqual([
+      expect(getLineMerges(state)).toEqual([
         {'1': {from: 1, to: 3}, '2': {from: 1, to: 4}, '3': {from: 1, to: 6}, '4': {from: 1, to: 4}}
       ]);
     });
@@ -814,7 +814,7 @@ describe('textsViewReducer.js', () => {
         },
         {type: '@@ite/TEXTS_VIEW/RECALC_LINE_MERGES'}
       );
-      expect(state.view.texts.syncData.lineMerges).toEqual([
+      expect(getLineMerges(state)).toEqual([
         {'1': {from: 1, to: 2}, '2': {from: 1, to: 3}, '3': {from: 1, to: 5}}
       ]);
     });
@@ -849,7 +849,7 @@ describe('textsViewReducer.js', () => {
         },
         {type: '@@ite/TEXTS_VIEW/RECALC_LINE_MERGES'}
       );
-      expect(state.view.texts.syncData.lineMerges).toEqual([
+      expect(getLineMerges(state)).toEqual([
         {'1': {from: 1, to: 4}, '2': {from: 1, to: 4}, '3': {from: 1, to: 6}, '4': {from: 1, to: 2}}
       ]);
     });
@@ -860,7 +860,7 @@ describe('textsViewReducer.js', () => {
 
     it('should handle no merges', () => {
       const syncData = {syncedTexts: {jp: 1, en: 2, ru: 3}, lineMerges: []};
-      const [merge, continueFrom] = mergeAtLine(1, 0, syncData);
+      const [merge, continueFrom] = mergeAtLine(1, 0, syncData.lineMerges, syncData.syncedTexts);
       expect(merge).toEqual(
         {'1': {from: 0, to: 1}, '2': {from: 0, to: 1}, '3': {from: 0, to: 1}}
       );
@@ -873,7 +873,7 @@ describe('textsViewReducer.js', () => {
           {'1': {from: 1, to: 2}, '2': {from: 1, to: 3}, '3': {from: 1, to: 2}}
         ]
       };
-      const [merge, continueFrom] = mergeAtLine(1, 1, syncData);
+      const [merge, continueFrom] = mergeAtLine(1, 1, syncData.lineMerges, syncData.syncedTexts);
       expect(merge).toEqual(
         {'1': {from: 1, to: 2}, '2': {from: 1, to: 3}, '3': {from: 1, to: 2}}
       );
@@ -886,7 +886,7 @@ describe('textsViewReducer.js', () => {
           {'1': {from: 1, to: 2}, '2': {from: 1, to: 3}, '3': {from: 1, to: 2}}
         ]
       };
-      const [merge, continueFrom] = mergeAtLine(1, 2, syncData);
+      const [merge, continueFrom] = mergeAtLine(1, 2, syncData.lineMerges, syncData.syncedTexts);
       expect(merge).toEqual(
         {'1': {from: 2, to: 3}, '2': {from: 3, to: 4}, '3': {from: 2, to: 3}}
       );
@@ -899,7 +899,7 @@ describe('textsViewReducer.js', () => {
           {'1': {from: 1, to: 2}, '2': {from: 1, to: 3}, '3': {from: 1, to: 2}}
         ]
       };
-      const [merge, continueFrom] = mergeAtLine(1, 0, syncData);
+      const [merge, continueFrom] = mergeAtLine(1, 0, syncData.lineMerges, syncData.syncedTexts);
       expect(merge).toEqual(
         {'1': {from: 0, to: 1}, '2': {from: 0, to: 1}, '3': {from: 0, to: 1}}
       );
@@ -913,7 +913,7 @@ describe('textsViewReducer.js', () => {
           {'1': {from: 5, to: 6}, '2': {from: 6, to: 7}, '3': {from: 5, to: 7}}
         ]
       };
-      const [merge, continueFrom] = mergeAtLine(1, 2, syncData);
+      const [merge, continueFrom] = mergeAtLine(1, 2, syncData.lineMerges, syncData.syncedTexts);
       expect(merge).toEqual(
         {'1': {from: 2, to: 3}, '2': {from: 3, to: 4}, '3': {from: 2, to: 3}}
       );
@@ -927,7 +927,7 @@ describe('textsViewReducer.js', () => {
           {'1': {from: 5, to: 6}, '2': {from: 6, to: 7}, '3': {from: 5, to: 7}}
         ]
       };
-      const [merge, continueFrom] = mergeAtLine(1, 6, syncData);
+      const [merge, continueFrom] = mergeAtLine(1, 6, syncData.lineMerges, syncData.syncedTexts);
       expect(merge).toEqual(
         {'1': {from: 6, to: 7}, '2': {from: 7, to: 8}, '3': {from: 7, to: 8}}
       );

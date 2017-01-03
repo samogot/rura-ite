@@ -44,10 +44,10 @@ function mapDispatchToProps(dispatch) {
     },
     onWheel: (textId, scrollTop, event, lineHeight) => {
       const direction = Math.sign(event.deltaY);
-      actions.scrollWheel(textId, direction, scrollTop, lineHeight, () => {
+      dispatch(actions.scrollWheel(textId, direction, scrollTop, lineHeight, () => {
         event.stopPropagation();
         event.preventDefault();
-      });
+      }));
     }
   };
 }

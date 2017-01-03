@@ -29,3 +29,5 @@ export default typeReducers(ACTION_TYPES.CHAPTERS_DATA, defaultState, {
 export const getChapter = (state, id) => state[id] || defaultItem;
 export const getChapterMainTextId = (state, id) => getChapter(state, id).text;
 export const getChapterLangTextId = (state, {id, lang}) => getChapter(state, id).langs[lang];
+export const getChapterLangs = (state, id) => getChapter(state, id).langs;
+export const getChapterMainLang = (state, id) => getChapter(state, id).mainLang;

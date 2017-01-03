@@ -3,6 +3,7 @@ import delegateReducerById from '../../utils/delegateReducerById';
 import ACTION_TYPES from '../../constants/ACTION_TYPES';
 import TextOperation from 'ot/lib/text-operation';
 import createSelectorById from '../../utils/createSelectorById';
+import {getFocusedTextId, getSyncedTexts, getConfigSrcForLang, getTextSelection} from '../../reducers';
 
 
 const defaultItem = {
@@ -46,14 +47,14 @@ const oneItemReducer = typeReducers(ACTION_TYPES.TEXTS_DATA, defaultItem, {
 const defaultState = {};
 
 function getCurTextId(fullState) {
-  return fullState.view.texts.focusedText;
+  return getFocusedTextId(fullState);
 }
-
 function getCurSrcTextId(fullState) {
   const curText = getCurTextId(fullState);
-  for (let [l, id] of Object.entries(fullState.view.texts.syncData.syncedTexts)) {
+  const syncedTexts = getSyncedTexts(fullState);
+  for (let [l, id] of Object.entries(syncedTexts)) {
     if (id == curText) {
-      return fullState.view.texts.syncData.syncedTexts[fullState.data.config.srcLang[l]];
+      return syncedTexts[getConfigSrcForLang(fullState, l)];
     }
   }
   return undefined
@@ -67,7 +68,7 @@ function getSourceMergesReducer(getId, getSourceMerges) {
       ...state,
       [textId]: {
         ...state[textId],
-        sourceMerges: getSourceMerges(state[textId].sourceMerges, fullState.view.texts[textId].selection.ranges[0].line),
+        sourceMerges: getSourceMerges(state[textId].sourceMerges, getTextSelection(fullState, textId).ranges[0].line),
       }
     };
   };
@@ -240,5 +241,6 @@ export default typeReducers(ACTION_TYPES.TEXTS_DATA, defaultState, {
 
 export const getText = (state, id) => state[id] || defaultItem;
 export const getTextWiki = (state, id) => getText(state, id).wiki;
+export const getTextSourceMerges = (state, id) => getText(state, id).sourceMerges;
 export const getTextOperation = (state, id) => getText(state, id).operationToApply;
 export const getTextOperationToApply = createSelectorById(getTextOperation, operation => TextOperation.fromJSON(operation));

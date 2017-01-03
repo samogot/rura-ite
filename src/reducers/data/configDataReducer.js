@@ -33,6 +33,13 @@ export default typeReducers(ACTION_TYPES.CONFIG_DATA, defaultState, {
   }),
 })
 
-export const getConfigScrollWheelBehaviour = (state) => scroll.wheelBehaviour;
-export const getConfigScrollWheelAmount = (state) => scroll.wheelAmount;
-export const getConfigScrollAnchorSelection = (state) => scroll.anchorSelection;
+export const getConfigScrollSyncTexts = (state) => state.scroll.syncTexts;
+export const getConfigScrollAlignLines = (state) => state.scroll.alignLines;
+export const getConfigScrollScrollAnchor = (state) => state.scroll.scrollAnchor;
+export const getConfigScrollSyncTextEdges = (state) => state.scroll.syncTextEdges;
+export const getConfigScrollWheelBehaviour = (state) => state.scroll.wheelBehaviour;
+export const getConfigScrollWheelAmount = (state) => state.scroll.wheelAmount;
+export const getConfigScrollAnchorSelection = (state) => state.scroll.anchorSelection;
+export const getConfigScrollExtraBottomHeight = (state) => state.scroll.extraBottomHeight;
+
+export const getConfigSrcForLang = (state, lang) => state.srcLang[lang];

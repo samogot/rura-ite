@@ -1,5 +1,6 @@
 import typeReducers from '../../utils/typeReducers';
 import ACTION_TYPES from '../../constants/ACTION_TYPES';
+import {getMainTextId, getOrigTextId, getActiveChapterId} from '../../reducers';
 
 
 const defaultState = {
@@ -10,7 +11,7 @@ const defaultState = {
   alignedTextSets: [],
 };
 
-function getAlignedTextSets(config, fullState) {
+function getAlignedTextSets_(config, fullState) {
   const textSets = [];
   config.content.forEach(function recursiveAll(item) {
     switch (item.type) {
@@ -36,15 +37,15 @@ function getAlignedTextSets(config, fullState) {
           }
         });
         columns.filter((item) => {
-          return item.id == `main-text-$(fullState.view.texts.activeChapter)` || item.component == 'text-orig-component';
+          return item.component == 'text-orig-component' || item.component == 'text-main-component' && item.props.chapter == getActiveChapterId(fullState);
         });
         if (columns.length > 1) {
           textSets.push(columns.map((item) => {
             if (item.component == 'text-orig-component') {
-              return fullState.data.chapters[fullState.view.texts.activeChapter].langs[item.props.lang];
+              return getOrigTextId(fullState, item.props);
             }
             else if (item.component == 'text-main-component') {
-              return fullState.data.chapters[item.props.chapter].text;
+              return getMainTextId(fullState, item.props);
             }
           }));
         }
@@ -59,6 +60,8 @@ export default typeReducers(ACTION_TYPES.LAYOUT_VIEW, defaultState, {
   SAVE_LAYOUT: (state, {config}, fullState) => ({
     config,
     actions: [],
-    alignedTextSets: getAlignedTextSets(config, fullState),
+    alignedTextSets: getAlignedTextSets_(config, fullState),
   }),
-})
+});
+
+export const getAlignedTextSets = (state) => state.alignedTextSets;

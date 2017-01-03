@@ -2,6 +2,22 @@ import typeReducers from '../../utils/typeReducers';
 import delegateReducerById from '../../utils/delegateReducerById';
 import ACTION_TYPES from '../../constants/ACTION_TYPES';
 import SCROLL_CONFIG from '../../constants/SCROLL_CONFIG';
+import {createSelector} from 'reselect';
+import {
+  getConfigScrollScrollAnchor,
+  getSyncedTextsList as getSyncedTextsListFull,
+  getTextHeights as getTextHeightsFull,
+  getAlignedTextSets,
+  getConfigScrollAlignLines,
+  getConfigSrcForLang,
+  getTextSourceMerges,
+  getChapterMainTextId,
+  getChapterLangs,
+  getChapterMainLang,
+  getConfigScrollSyncTexts,
+  getConfigScrollSyncTextEdges,
+  getConfigScrollExtraBottomHeight
+} from '../../reducers';
 
 export const defaultItem = {
   heights: [],
@@ -98,7 +114,7 @@ const oneItemReducer = typeReducers(ACTION_TYPES.TEXTS_VIEW, defaultItem, {
     }
   },
   SCROLL_TO_SELECTION: (state, {}, fullState) => {
-    const scrollAnchor = fullState.data.config.scroll.scrollAnchor;
+    const scrollAnchor = getConfigScrollScrollAnchor(fullState);
     const line = state.selection.ranges[0].line;
     const screenAnchor = scrollAnchor * state.scrollInfo.clientHeight;
     if (!state.heights[line + 1]) {
@@ -108,10 +124,11 @@ const oneItemReducer = typeReducers(ACTION_TYPES.TEXTS_VIEW, defaultItem, {
     if (line == state.heights.length - 2) {
       height -= state.offsets[line];
       let anyTeaxtsHasMoreLines = false;
-      for (let [, text] of Object.entries(fullState.view.texts.syncData.syncedTexts)) {
-        if (fullState.view.texts[text] && fullState.view.texts[text].heights[line + 2]) {
+      for (let text of getSyncedTextsListFull(fullState)) {
+        const heights = getTextHeightsFull(fullState, text);
+        if (heights[line + 2]) {
           anyTeaxtsHasMoreLines = true;
-          height = Math.max(height, fullState.view.texts[text].heights[line + 1] - fullState.view.texts[text].heights[line]);
+          height = Math.max(height, heights[line + 1] - heights[line]);
         }
       }
       if (!anyTeaxtsHasMoreLines) {
@@ -130,7 +147,6 @@ const oneItemReducer = typeReducers(ACTION_TYPES.TEXTS_VIEW, defaultItem, {
     }
   },
 });
-
 
 const defaultState = {
   activeChapter: 0,
@@ -153,45 +169,45 @@ function lineAtHeight(height, {viewport, heights}) {
   return Math.max(0, line);
 }
 
-export function mergeAtLine(id, line, syncData, startFrom = 0) {
-  let merge = syncData.lineMerges.length;
-  for (let i = startFrom; i < syncData.lineMerges.length; ++i) {
-    if (syncData.lineMerges[i][id].to > line) {
+export function mergeAtLine(id, line, lineMerges, syncedTexts, startFrom = 0) {
+  let merge = lineMerges.length;
+  for (let i = startFrom; i < lineMerges.length; ++i) {
+    if (lineMerges[i][id].to > line) {
       merge = i;
       break;
     }
   }
-  if (merge != syncData.lineMerges.length && syncData.lineMerges[merge][id].from <= line) {
-    return [syncData.lineMerges[merge], merge];
+  if (merge != lineMerges.length && lineMerges[merge][id].from <= line) {
+    return [lineMerges[merge], merge];
   }
   else if (merge) {
     const res = {};
-    for (let [text, m] of Object.entries(syncData.lineMerges[merge - 1])) {
+    for (let [text, m] of Object.entries(lineMerges[merge - 1])) {
       res[text] = {
-        from: m.to + line - syncData.lineMerges[merge - 1][id].to,
-        to: m.to + line - syncData.lineMerges[merge - 1][id].to + 1
+        from: m.to + line - lineMerges[merge - 1][id].to,
+        to: m.to + line - lineMerges[merge - 1][id].to + 1
       }
     }
     return [res, merge - 1];
   }
   else {
     const res = {};
-    for (let [, text] of Object.entries(syncData.syncedTexts)) {
+    for (let [, text] of Object.entries(syncedTexts)) {
       res[text] = {from: line, to: line + 1}
     }
     return [res, 0];
   }
 }
 
-function computeTargetScrollPositions(state, sourceId, scrollTop, targets, scrollConfig) {
+function computeTargetScrollPositions(state, sourceId, scrollTop, targets, scrollAnchor, syncTextEdges) {
   const targetScrollTop = {};
   targetScrollTop[sourceId] = scrollTop;
   const {scrollInfo, heights: sourceHeights} = state[sourceId];
   const sourceHalfScreen = .5 * scrollInfo.clientHeight,
-    sourceAnchorPosition = scrollConfig.scrollAnchor * scrollInfo.clientHeight,
+    sourceAnchorPosition = scrollAnchor * scrollInfo.clientHeight,
     midY = scrollTop + sourceAnchorPosition;
   const midLine = lineAtHeight(midY, state[sourceId]);
-  const [merge] = mergeAtLine(sourceId, midLine, state.syncData);
+  const [merge] = mergeAtLine(sourceId, midLine, getLineMerges(state), getSyncedTexts(state));
   const sourceOffset = {top: sourceHeights[merge[sourceId].from], bot: sourceHeights[merge[sourceId].to]};
   const ratio = (midY - sourceOffset.top) / (sourceOffset.bot - sourceOffset.top);
   // const log = []
@@ -200,12 +216,12 @@ function computeTargetScrollPositions(state, sourceId, scrollTop, targets, scrol
     const {scrollInfo: targetScrollInfo, heights: targetHeights} = state[targetId] || defaultItem;
 
     //for aligned texts use simple computing
-    if (state.syncData.alignedTextSets.some(set => set.includes(sourceId) && set.includes(targetId))) {
+    if (getFilteredAlignedTextSets(state).some(set => set.includes(sourceId) && set.includes(targetId))) {
       targetPos = scrollTop;
       // log.push(targetPos)
     }
     else {
-      const targetAnchorPosition = scrollConfig.scrollAnchor * targetScrollInfo.clientHeight;
+      const targetAnchorPosition = scrollAnchor * targetScrollInfo.clientHeight;
       const targetMax = targetHeights[targetHeights.length - 1];
       const targetOffset = {
         top: targetHeights[merge[targetId].from] || targetMax,
@@ -217,7 +233,7 @@ function computeTargetScrollPositions(state, sourceId, scrollTop, targets, scrol
 
       // Some careful tweaking to make sure no space is left out of view
       // when scrolling to top or bottom.
-      if (scrollConfig.syncTextEdges) {
+      if (syncTextEdges) {
         let botDist, mix;
         if (targetPos > scrollInfo.top && (mix = scrollInfo.top / sourceHalfScreen) < 1) {
           targetPos = targetPos * mix + scrollInfo.top * (1 - mix);
@@ -253,24 +269,24 @@ function computeOffsets(state) {
   const resultLineTop = (id, line) => resultOffsets[id].heights[line];
 
 
-  for (const textSet of state.syncData.alignedTextSets) {
+  for (const textSet of getFilteredAlignedTextSets(state)) {
     let minViewport = Infinity, maxViewport = -Infinity;
     let minViewportId, maxViewportId;
     const extraOffsets = {};
     for (let id of textSet) {
-      const minTemp = mergeAtLine(id, prevState(id).viewport.from, state.syncData)[0][id].from;
+      const minTemp = mergeAtLine(id, prevState(id).viewport.from, getLineMerges(state), getSyncedTexts(state))[0][id].from;
       if (minViewport > minTemp) {
         minViewport = minTemp;
         minViewportId = id;
       }
-      const maxTemp = Math.min(prevState(id).heights.length - 1, mergeAtLine(id, prevState(id).viewport.to, state.syncData)[0][id].to - 1);
+      const maxTemp = Math.min(prevState(id).heights.length - 1, mergeAtLine(id, prevState(id).viewport.to, getLineMerges(state), getSyncedTexts(state))[0][id].to - 1);
       if (maxViewport < maxTemp) {
         maxViewport = maxTemp;
         maxViewportId = id;
       }
     }
     if (maxViewportId != minViewportId) {
-      minViewport = mergeAtLine(minViewportId, prevState(minViewportId).viewport.from, state.syncData)[0][maxViewportId].from;
+      minViewport = mergeAtLine(minViewportId, prevState(minViewportId).viewport.from, getLineMerges(state), getSyncedTexts(state))[0][maxViewportId].from;
       minViewportId = maxViewportId;
     }
     for (let id of textSet) {
@@ -281,7 +297,7 @@ function computeOffsets(state) {
     let contFrom = 0;
     let merge;
     while (line < maxViewport) {
-      [merge, contFrom] = mergeAtLine(minViewportId, line, state.syncData, contFrom);
+      [merge, contFrom] = mergeAtLine(minViewportId, line, getLineMerges(state), getSyncedTexts(state), contFrom);
       const mergeHeights = {};
       for (let id of textSet) {
         mergeHeights[id] = 0;
@@ -341,33 +357,34 @@ function computeOffsets(state) {
   return resultOffsets;
 }
 
-function getAlignedTextSets(syncedTexts, fullState) {
-  switch (fullState.data.config.scroll.alignLines) {
+function getAlignedTextSets_(syncedTextsList, fullState) {
+  switch (getConfigScrollAlignLines(fullState)) {
     case SCROLL_CONFIG.ALIGN_LINES.ROW:
-      return fullState.view.layout.alignedTextSets.map(set => set.filter(text => syncedTexts.includes(text))).filter(set => set.length > 1);
+      return getAlignedTextSets(fullState).map(set => set.filter(text => syncedTextsList.includes(text))).filter(set => set.length > 1);
     case SCROLL_CONFIG.ALIGN_LINES.NEVER:
       return [];
     case SCROLL_CONFIG.ALIGN_LINES.ALL:
-      return [syncedTexts];
+      return [syncedTextsList];
   }
 }
 
-function getLineMerges(syncedTexts, fullState) {
+function getLineMerges_(syncedTexts, fullState) {
   const resultMerges = [];
   const mergesLists = []; //список всех бинарных точек синхронизации с айдишниками
   const syncedLinePosition = {}; //последняя известная позиция в которой все синхронно
   for (let [l, id] of Object.entries(syncedTexts)) {
     syncedLinePosition[id] = 0;
     // собераем mergesLists переводя из названи языков в айдишники текстов
-    if (fullState.data.config.srcLang[l]) {
+    const srcLang = getConfigSrcForLang(fullState, l);
+    if (srcLang) {
       const list = {
-        src: syncedTexts[fullState.data.config.srcLang[l]],
+        src: syncedTexts[srcLang],
         dst: id,
         merges: [],
         cur: 0,
       };
       // если мы можем объеденить бинарные точки синхронизации в приделах самих бинарных - объеденяем
-      for (let m of fullState.data.texts[id].sourceMerges) {
+      for (let m of getTextSourceMerges(fullState, id)) {
         if (list.merges.length > 0 && (m.srcFrom < list.merges[list.merges.length - 1].srcTo ||
                                        m.dstFrom < list.merges[list.merges.length - 1].dstTo)) {
           list.merges[list.merges.length - 1].srcTo = m.srcTo;
@@ -570,12 +587,13 @@ function getLineMerges(syncedTexts, fullState) {
   return resultMerges;
 }
 
-function getSyncedTexts(fullState) {
+function getSyncedTexts_(state, fullState) {
   const targets = {};
-  const chapter = fullState.data.chapters[fullState.view.texts.activeChapter];
-  targets[chapter.mainLang] = chapter.text;
-  for (let [lang, text] of Object.entries(chapter.langs)) {
-    if (fullState.data.config.scroll.syncTexts === true || fullState.data.config.scroll.syncTexts[lang]) {
+  const activeChapter = getActiveChapterId(state);
+  targets[getChapterMainLang(fullState)] = getChapterMainTextId(fullState, activeChapter);
+  const syncTexts = getConfigScrollSyncTexts(fullState);
+  for (let [lang, text] of Object.entries(getChapterLangs(fullState, activeChapter))) {
+    if (syncTexts === true || syncTexts[lang]) {
       targets[lang] = text;
     }
   }
@@ -593,10 +611,10 @@ export default typeReducers(ACTION_TYPES.TEXTS_VIEW, defaultState, {
   }),
   SYNC_SCROLL: (state, {id}, fullState) => {
     const scrollTop = state[id].scrollInfo.top;
-    const targets = Object.entries(state.syncData.syncedTexts).map(([, t]) => t);
+    const targets = Object.entries(getSyncedTexts(state)).map(([, t]) => t);
     if (!targets.includes(id)) return state;
     targets.splice(targets.indexOf(id), 1);
-    const targetScrollTop = computeTargetScrollPositions(state, id, scrollTop, targets, fullState.data.config.scroll);
+    const targetScrollTop = computeTargetScrollPositions(state, id, scrollTop, targets, getConfigScrollScrollAnchor(fullState), getConfigScrollSyncTextEdges(fullState));
     return {
       ...state,
       ...Object.entries(targetScrollTop).reduce((texts, [id, top]) => ({
@@ -613,14 +631,14 @@ export default typeReducers(ACTION_TYPES.TEXTS_VIEW, defaultState, {
     }
   },
   SYNC_SELECTION: (state, {id}) => {
-    if (state[id].selection.ranges.length > 1 || !Object.entries(state.syncData.syncedTexts).map(([, id]) => id).includes(id)) {
+    if (state[id].selection.ranges.length > 1 || !Object.entries(getSyncedTexts(state)).map(([, id]) => id).includes(id)) {
       return state;
     }
-    const [merge] = mergeAtLine(id, state[id].selection.ranges[0].line, state.syncData);
+    const [merge] = mergeAtLine(id, state[id].selection.ranges[0].line, getLineMerges(state), getSyncedTexts(state));
     const ratio = (state[id].selection.ranges[0].line - merge[id].from) / (merge[id].to - merge[id].from);
     return {
       ...state,
-      ...Object.entries(state.syncData.syncedTexts).reduce((texts, [, targetId]) => {
+      ...Object.entries(getSyncedTexts(state)).reduce((texts, [, targetId]) => {
         let selection = {};
         const targetState = state[targetId] || defaultItem;
         if (id == targetId || targetState.selection.ranges.length > 1
@@ -651,7 +669,7 @@ export default typeReducers(ACTION_TYPES.TEXTS_VIEW, defaultState, {
     return {
       ...state,
       ...Object.entries(newOffsets).reduce((texts, [id, newTextState]) => {
-        if (fullState.data.config.scroll.extraBottomHeight && state[id].heights[state[id].heights.length - 1] >= state[id].scrollInfo.height - 10) {
+        if (getConfigScrollExtraBottomHeight(fullState) && state[id].heights[state[id].heights.length - 1] >= state[id].scrollInfo.height - 10) {
           newTextState.offsets[state[id].heights.length - 2] = newTextState.offsets[state[id].heights.length - 2] || 0;
           newTextState.offsets[state[id].heights.length - 2] += state[id].scrollInfo.clientHeight;
           newTextState.heights = newTextState.heights || [...state[id].heights.length];
@@ -674,21 +692,21 @@ export default typeReducers(ACTION_TYPES.TEXTS_VIEW, defaultState, {
     ...state,
     syncData: {
       ...state.syncData,
-      syncedTexts: getSyncedTexts(fullState),
+      syncedTexts: getSyncedTexts_(state, fullState),
     }
   }),
   RECALC_ALIGNED_TEXT_SETS: (state, {}, fullState) => ({
     ...state,
     syncData: {
       ...state.syncData,
-      alignedTextSets: getAlignedTextSets(Object.entries(state.syncData.syncedTexts).map(([, t]) => t), fullState),
+      alignedTextSets: getAlignedTextSets_(getSyncedTextsList(state), fullState),
     }
   }),
   RECALC_LINE_MERGES: (state, {}, fullState) => ({
     ...state,
     syncData: {
       ...state.syncData,
-      lineMerges: getLineMerges(state.syncData.syncedTexts, fullState),
+      lineMerges: getLineMerges_(getSyncedTexts(state), fullState),
     },
   }),
   UPDATE_LINES_HEIGHTS: delegateReducerById(oneItemReducer),
@@ -701,8 +719,16 @@ export default typeReducers(ACTION_TYPES.TEXTS_VIEW, defaultState, {
   SCROLL_TO_SELECTION: delegateReducerById(oneItemReducer),
 })
 
-export const getText = (state, id) => state[id] || defaultItem;
+export const getSyncedTexts = (state) => state.syncData.syncedTexts;
+export const getSyncedTextsList = createSelector(getSyncedTexts, syncedTexts => Object.entries(syncedTexts).map(([, t]) => t));
+export const getFilteredAlignedTextSets = (state) => state.syncData.alignedTextSets;
+export const getLineMerges = (state) => state.syncData.lineMerges;
+
 export const getActiveChapterId = (state) => state.activeChapter;
+export const getFocusedTextId = (state) => state.focusedText;
+
+export const getText = (state, id) => state[id] || defaultItem;
 export const getTextScrollTop = (state, id) => getText(state, id).scrollInfo.top;
 export const getTextSelection = (state, id) => getText(state, id).selection;
 export const getTextOffsets = (state, id) => getText(state, id).offsets;
+export const getTextHeights = (state, id) => getText(state, id).heights;

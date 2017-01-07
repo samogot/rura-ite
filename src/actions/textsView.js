@@ -1,12 +1,12 @@
 import T from '../constants/ACTION_TYPES';
 import makeDebouncedActionCreator from '../utils/makeDebouncedActionCreator';
 import {
-	getConfigScrollWheelBehaviour,
-	getConfigScrollWheelAmount,
-	getConfigScrollAnchorSelection,
-	getTextSelection,
-	getActiveChapterId,
-	getFocusedTextId
+  getConfigScrollWheelBehaviour,
+  getConfigScrollWheelAmount,
+  getConfigScrollAnchorSelection,
+  getTextSelection,
+  getActiveChapterId,
+  getFocusedTextId
 } from '../reducers/selectors';
 import SCROLL_CONFIG from '../constants/SCROLL_CONFIG';
 
@@ -65,7 +65,6 @@ export function updateSelection(id, selection) {
     const state = getState();
     dispatch(updateSelectionOnly(id, selection));
     if (selection.ranges[0].line != getTextSelection(state, id).ranges[0].line) {
-      dispatch(syncSelection(id));
       dispatch(scrollToSelectionConditional(id));
     }
   };
@@ -102,21 +101,7 @@ export function updateAllHeights(id, viewport, heights, scrollInfo) {
   ]
 }
 
-export function syncScroll(id) {
-  return {
-    type: T.TEXTS_VIEW.SYNC_SCROLL,
-    id,
-  }
-}
-
-export function syncSelection(id) {
-  return {
-    type: T.TEXTS_VIEW.SYNC_SELECTION,
-    id,
-  }
-}
-
-export function setScrollOnly(id, scrollTop) {
+export function setScroll(id, scrollTop) {
   return {
     type: T.TEXTS_VIEW.SCROLL_SET,
     id,
@@ -124,14 +109,7 @@ export function setScrollOnly(id, scrollTop) {
   }
 }
 
-export function setScroll(id, scrollTop) {
-  return [
-    setScrollOnly(id, scrollTop),
-    syncScroll(id),
-  ];
-}
-
-export function scrollLineOnly(id, ammount, lineHeight) {
+export function scrollLine(id, ammount, lineHeight) {
   return {
     type: T.TEXTS_VIEW.SCROLL_LINE,
     id,
@@ -140,27 +118,12 @@ export function scrollLineOnly(id, ammount, lineHeight) {
   }
 }
 
-export function scrollLine(id, ammount, lineHeight) {
-  return [
-    scrollLineOnly(id, ammount, lineHeight),
-    syncScroll(id),
-  ];
-}
-
-
-export function scrollParagraphOnly(id, ammount) {
+export function scrollParagraph(id, ammount) {
   return {
     type: T.TEXTS_VIEW.SCROLL_PARAGRAPH,
     id,
     ammount,
   }
-}
-
-export function scrollParagraph(id, ammount) {
-  return [
-    scrollParagraphOnly(id, ammount),
-    syncScroll(id),
-  ];
 }
 
 export function scrollWheel(textId, direction, scrollTop, lineHeight, onSuccess) {
@@ -185,18 +148,11 @@ export function scrollWheel(textId, direction, scrollTop, lineHeight, onSuccess)
   };
 }
 
-export function scrollToSelectionOnly(id) {
+export function scrollToSelection(id) {
   return {
     type: T.TEXTS_VIEW.SCROLL_TO_SELECTION,
     id,
   }
-}
-
-export function scrollToSelection(id) {
-  return [
-    scrollToSelectionOnly(id),
-    syncScroll(id),
-  ];
 }
 
 export function scrollToSelectionConditional(id) {

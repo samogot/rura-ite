@@ -10,6 +10,7 @@ import {
   getConfigScrollScrollAnchor,
   getConfigScrollExtraBottomHeight
 } from '../selectors';
+import reduceReducersFull from '../../utils/reduceReducersFull';
 
 export const defaultItem = {
   heights: [],
@@ -186,62 +187,6 @@ export function mergeAtLine(id, line, lineMerges, syncedTextsList, startFrom = 0
   }
 }
 
-function computeTargetScrollPositions(state, sourceId, scrollTop, targets, scrollAnchor, syncTextEdges, lineMerges, syncedTextsList, filteredAlignedTextSets) {
-  const targetScrollTop = {};
-  targetScrollTop[sourceId] = scrollTop;
-  const {scrollInfo, heights: sourceHeights} = state[sourceId];
-  const sourceHalfScreen = .5 * scrollInfo.clientHeight,
-    sourceAnchorPosition = scrollAnchor * scrollInfo.clientHeight,
-    midY = scrollTop + sourceAnchorPosition;
-  const midLine = lineAtHeight(midY, state[sourceId]);
-  const [merge] = mergeAtLine(sourceId, midLine, lineMerges, syncedTextsList);
-  const sourceOffset = {top: sourceHeights[merge[sourceId].from], bot: sourceHeights[merge[sourceId].to]};
-  const ratio = (midY - sourceOffset.top) / (sourceOffset.bot - sourceOffset.top);
-  // const log = []
-  for (let targetId of targets) {
-    let targetPos;
-    const {scrollInfo: targetScrollInfo, heights: targetHeights} = state[targetId] || defaultItem;
-
-    //for aligned texts use simple computing
-    if (filteredAlignedTextSets.some(set => set.includes(sourceId) && set.includes(targetId))) {
-      targetPos = scrollTop;
-      // log.push(targetPos)
-    }
-    else {
-      const targetAnchorPosition = scrollAnchor * targetScrollInfo.clientHeight;
-      const targetMax = targetHeights[targetHeights.length - 1];
-      const targetOffset = {
-        top: targetHeights[merge[targetId].from] || targetMax,
-        bot: targetHeights[merge[targetId].to] || targetMax
-      };
-      targetPos = (targetOffset.top - targetAnchorPosition) + ratio * (targetOffset.bot - targetOffset.top);
-      // log.push(targetId)
-      // log.push(targetPos)
-
-      // Some careful tweaking to make sure no space is left out of view
-      // when scrolling to top or bottom.
-      if (syncTextEdges) {
-        let botDist, mix;
-        if (targetPos > scrollInfo.top && (mix = scrollInfo.top / sourceHalfScreen) < 1) {
-          targetPos = targetPos * mix + scrollInfo.top * (1 - mix);
-        }
-        else if ((botDist = scrollInfo.height - scrollInfo.clientHeight - scrollInfo.top) < sourceHalfScreen) {
-          const botDistOther = targetScrollInfo.height - targetScrollInfo.clientHeight - targetPos;
-          if (botDistOther > botDist && (mix = botDist / sourceHalfScreen) < 1) {
-            targetPos = targetPos * mix + (targetScrollInfo.height - targetScrollInfo.clientHeight - botDist) * (1 - mix);
-          }
-        }
-        // log.push(targetPos)
-      }
-    }
-    targetPos = Math.min(Math.max(targetPos, 0), targetScrollInfo.height - targetScrollInfo.clientHeight);
-    // log.push(targetPos)
-    targetScrollTop[targetId] = Math.round(targetPos);
-  }
-  // console.log(midY, midLine, ratio, ...log)
-  return targetScrollTop;
-}
-
 function computeOffsets(state, filteredAlignedTextSets, lineMerges, syncedTextsList) {
   const resultOffsets = {};
 
@@ -344,6 +289,123 @@ function computeOffsets(state, filteredAlignedTextSets, lineMerges, syncedTextsL
   return resultOffsets;
 }
 
+function computeTargetScrollPositions(state, sourceId, scrollTop, targets, scrollAnchor, syncTextEdges, lineMerges, syncedTextsList, filteredAlignedTextSets) {
+  const targetScrollTop = {};
+  targetScrollTop[sourceId] = scrollTop;
+  const {scrollInfo, heights: sourceHeights} = state[sourceId];
+  const sourceHalfScreen = .5 * scrollInfo.clientHeight,
+    sourceAnchorPosition = scrollAnchor * scrollInfo.clientHeight,
+    midY = scrollTop + sourceAnchorPosition;
+  const midLine = lineAtHeight(midY, state[sourceId]);
+  const [merge] = mergeAtLine(sourceId, midLine, lineMerges, syncedTextsList);
+  const sourceOffset = {top: sourceHeights[merge[sourceId].from], bot: sourceHeights[merge[sourceId].to]};
+  const ratio = (midY - sourceOffset.top) / (sourceOffset.bot - sourceOffset.top);
+  // const log = []
+  for (let targetId of targets) {
+    let targetPos;
+    const {scrollInfo: targetScrollInfo, heights: targetHeights} = state[targetId] || defaultItem;
+
+    //for aligned texts use simple computing
+    if (filteredAlignedTextSets.some(set => set.includes(sourceId) && set.includes(targetId))) {
+      targetPos = scrollTop;
+      // log.push(targetPos)
+    }
+    else {
+      const targetAnchorPosition = scrollAnchor * targetScrollInfo.clientHeight;
+      const targetMax = targetHeights[targetHeights.length - 1];
+      const targetOffset = {
+        top: targetHeights[merge[targetId].from] || targetMax,
+        bot: targetHeights[merge[targetId].to] || targetMax
+      };
+      targetPos = (targetOffset.top - targetAnchorPosition) + ratio * (targetOffset.bot - targetOffset.top);
+      // log.push(targetId)
+      // log.push(targetPos)
+
+      // Some careful tweaking to make sure no space is left out of view
+      // when scrolling to top or bottom.
+      if (syncTextEdges) {
+        let botDist, mix;
+        if (targetPos > scrollInfo.top && (mix = scrollInfo.top / sourceHalfScreen) < 1) {
+          targetPos = targetPos * mix + scrollInfo.top * (1 - mix);
+        }
+        else if ((botDist = scrollInfo.height - scrollInfo.clientHeight - scrollInfo.top) < sourceHalfScreen) {
+          const botDistOther = targetScrollInfo.height - targetScrollInfo.clientHeight - targetPos;
+          if (botDistOther > botDist && (mix = botDist / sourceHalfScreen) < 1) {
+            targetPos = targetPos * mix + (targetScrollInfo.height - targetScrollInfo.clientHeight - botDist) * (1 - mix);
+          }
+        }
+        // log.push(targetPos)
+      }
+    }
+    targetPos = Math.min(Math.max(targetPos, 0), targetScrollInfo.height - targetScrollInfo.clientHeight);
+    // log.push(targetPos)
+    targetScrollTop[targetId] = Math.round(targetPos);
+  }
+  // console.log(midY, midLine, ratio, ...log)
+  return targetScrollTop;
+}
+
+function syncScrollReducer(state, {id}, fullState) {
+  const scrollTop = state[id].scrollInfo.top;
+  const lineMerges = getLineMerges(fullState);
+  const filteredAlignedTextSets = getFilteredAlignedTextSets(fullState);
+  const syncedTextsList = getSyncedTextsList(fullState);
+  const configScrollScrollAnchor = getConfigScrollScrollAnchor(fullState);
+  const configScrollSyncTextEdges = getConfigScrollSyncTextEdges(fullState);
+  const targets = [...syncedTextsList];
+  if (!targets.includes(id)) return state;
+  targets.splice(targets.indexOf(id), 1);
+  const targetScrollTop = computeTargetScrollPositions(state, id, scrollTop, targets, configScrollScrollAnchor, configScrollSyncTextEdges, lineMerges, syncedTextsList, filteredAlignedTextSets);
+  return {
+    ...state,
+    ...Object.entries(targetScrollTop).reduce((texts, [id, top]) => ({
+      ...texts,
+      [id]: {
+        ...state[id] || defaultItem,
+        scrollInfo: {
+          ...state[id].scrollInfo,
+          top,
+        },
+      },
+    }), {}),
+  }
+}
+
+function syncSelectionReducer(state, {id}, fullState) {
+  const syncedTextsList = getSyncedTextsList(fullState);
+  if (state[id].selection.ranges.length > 1 || !syncedTextsList.includes(id)) {
+    return state;
+  }
+  const lineMerges = getLineMerges(fullState);
+  const [merge] = mergeAtLine(id, state[id].selection.ranges[0].line, lineMerges, syncedTextsList);
+  const ratio = (state[id].selection.ranges[0].line - merge[id].from) / (merge[id].to - merge[id].from);
+  const lastLine = state[id].heights.length - 2;
+  const isLastLine = state[id].selection.ranges[0].line == lastLine;
+  return {
+    ...state,
+    ...syncedTextsList.reduce((texts, targetId) => {
+      let selection = {};
+      const targetState = state[targetId] || defaultItem;
+      if (id == targetId || targetState.selection.ranges.length > 1
+          || targetState.selection.ranges[0].head != targetState.selection.ranges[0].anchor
+          || isLastLine && targetState.selection.ranges[0].line > lastLine) {
+        return texts;
+      }
+      else {
+        const targetLine = merge[targetId].from + Math.floor(ratio * (merge[targetId].to - merge[targetId].from));
+        selection = {ranges: [{line: targetLine}]};
+      }
+      return {
+        ...texts,
+        [targetId]: {
+          ...targetState,
+          selection,
+        },
+      }
+    }, {}),
+  };
+}
+
 export default typeReducers(ACTION_TYPES.TEXTS_VIEW, defaultState, {
   SELECT_CHAPTER: (state, {chapter}) => ({
     ...state,
@@ -353,56 +415,6 @@ export default typeReducers(ACTION_TYPES.TEXTS_VIEW, defaultState, {
     ...state,
     focusedText: text,
   }),
-  SYNC_SCROLL: (state, {id}, fullState) => {
-    const scrollTop = state[id].scrollInfo.top;
-    const targets = [...getSyncedTextsList(fullState)];
-    if (!targets.includes(id)) return state;
-    targets.splice(targets.indexOf(id), 1);
-    const targetScrollTop = computeTargetScrollPositions(state, id, scrollTop, targets, getConfigScrollScrollAnchor(fullState), getConfigScrollSyncTextEdges(fullState), getLineMerges(fullState), getSyncedTextsList(fullState), getFilteredAlignedTextSets(fullState));
-    return {
-      ...state,
-      ...Object.entries(targetScrollTop).reduce((texts, [id, top]) => ({
-        ...texts,
-        [id]: {
-          ...defaultItem,
-          ...state[id],
-          scrollInfo: {
-            ...state[id].scrollInfo,
-            top,
-          },
-        },
-      }), {}),
-    }
-  },
-  SYNC_SELECTION: (state, {id}, fullState) => {
-    if (state[id].selection.ranges.length > 1 || !getSyncedTextsList(fullState).includes(id)) {
-      return state;
-    }
-    const [merge] = mergeAtLine(id, state[id].selection.ranges[0].line, getLineMerges(fullState), getSyncedTextsList(fullState));
-    const ratio = (state[id].selection.ranges[0].line - merge[id].from) / (merge[id].to - merge[id].from);
-    return {
-      ...state,
-      ...getSyncedTextsList(fullState).reduce((texts, targetId) => {
-        let selection = {};
-        const targetState = state[targetId] || defaultItem;
-        if (id == targetId || targetState.selection.ranges.length > 1
-            || targetState.selection.ranges[0].head != targetState.selection.ranges[0].anchor) {
-          selection = targetState.selection;
-        }
-        else {
-          const targetLine = merge[targetId].from + Math.floor(ratio * (merge[targetId].to - merge[targetId].from));
-          selection = {ranges: [{line: targetLine}]};
-        }
-        return {
-          ...texts,
-          [targetId]: {
-            ...targetState,
-            selection,
-          },
-        }
-      }, {}),
-    };
-  },
   RECALC_OFFSETS: (state, {}, fullState) => {
     const newOffsets = computeOffsets(state, getFilteredAlignedTextSets(fullState), getLineMerges(fullState), getSyncedTextsList(fullState));
     for (let id in state) {
@@ -435,11 +447,11 @@ export default typeReducers(ACTION_TYPES.TEXTS_VIEW, defaultState, {
   UPDATE_LINES_HEIGHTS: delegateReducerById(oneItemReducer),
   UPDATE_OFFSETS: delegateReducerById(oneItemReducer),
   UPDATE_CLIENT_HEIGHT: delegateReducerById(oneItemReducer),
-  UPDATE_SELECTION: delegateReducerById(oneItemReducer),
-  SCROLL_SET: delegateReducerById(oneItemReducer),
-  SCROLL_LINE: delegateReducerById(oneItemReducer),
-  SCROLL_PARAGRAPH: delegateReducerById(oneItemReducer),
-  SCROLL_TO_SELECTION: delegateReducerById(oneItemReducer),
+  UPDATE_SELECTION: reduceReducersFull(delegateReducerById(oneItemReducer), syncSelectionReducer),
+  SCROLL_SET: reduceReducersFull(delegateReducerById(oneItemReducer), syncScrollReducer),
+  SCROLL_LINE: reduceReducersFull(delegateReducerById(oneItemReducer), syncScrollReducer),
+  SCROLL_PARAGRAPH: reduceReducersFull(delegateReducerById(oneItemReducer), syncScrollReducer),
+  SCROLL_TO_SELECTION: reduceReducersFull(delegateReducerById(oneItemReducer), syncScrollReducer),
 })
 
 export const getActiveChapterId = (state) => state.activeChapter;

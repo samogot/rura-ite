@@ -1,3 +1,7 @@
-/**
- * Created by samogot on 04.01.17.
- */
+export default function reduceReducersFull(...reducers) {
+  return (previous, current, full) =>
+    reducers.reduce(
+      (p, r) => r(p, current, full),
+      previous
+    );
+}

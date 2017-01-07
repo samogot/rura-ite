@@ -1,33 +1,37 @@
 import T from '../constants/ACTION_TYPES';
 import makeDebouncedActionCreator from '../utils/makeDebouncedActionCreator';
 import {
-  getConfigScrollWheelBehaviour,
-  getConfigScrollWheelAmount,
-  getConfigScrollAnchorSelection,
-  getTextSelection
+	getConfigScrollWheelBehaviour,
+	getConfigScrollWheelAmount,
+	getConfigScrollAnchorSelection,
+	getTextSelection,
+	getActiveChapterId,
+	getFocusedTextId
 } from '../reducers/selectors';
 import SCROLL_CONFIG from '../constants/SCROLL_CONFIG';
 
 export function selectActiveChapter(id) {
-  return [
-    {
-      type: T.TEXTS_VIEW.SELECT_CHAPTER,
-      chapter: id
-    },
-    recalcSyncedTexts(),
-  ]
+	return (dispatch, getState) => {
+		if (getActiveChapterId(getState()) != id) {
+			dispatch({
+				type: T.TEXTS_VIEW.SELECT_CHAPTER,
+				chapter: id
+			});
+			dispatch(recalcOffsetsDebounce);
+		}
+	};
 }
-
-export const selectActiveChapterDebounce = makeDebouncedActionCreator(selectActiveChapter);
 
 export function selectActiveText(id) {
-  return {
-    type: T.TEXTS_VIEW.SELECT_TEXT,
-    text: id
+	return (dispatch, getState) => {
+		if (getFocusedTextId(getState()) != id) {
+			dispatch({
+				type: T.TEXTS_VIEW.SELECT_TEXT,
+				text: id
+			});
+		}
   };
 }
-
-export const selectActiveTextDebounce = makeDebouncedActionCreator(selectActiveText);
 
 export function updateLinesHeightsOnly(id, viewport, heights, fullHeight, lineCount) {
   return {
@@ -204,30 +208,3 @@ export function scrollToSelectionConditional(id) {
 }
 
 export const scrollToSelectionConditionalDebounced = makeDebouncedActionCreator(makeDebouncedActionCreator(scrollToSelectionConditional, 200), 300);
-
-export function recalcSyncedTexts() {
-  return [
-    {
-      type: T.TEXTS_VIEW.RECALC_SYNCED_TEXTS
-    },
-    ...recalcAlignedTextSets(),
-    ...recalcLineMerges(),
-  ];
-
-}
-export function recalcAlignedTextSets() {
-  return [
-    {
-      type: T.TEXTS_VIEW.RECALC_ALIGNED_TEXT_SETS
-    },
-    recalcOffsetsDebounce()
-  ];
-}
-export function recalcLineMerges() {
-  return [
-    {
-      type: T.TEXTS_VIEW.RECALC_LINE_MERGES
-    },
-    recalcOffsetsDebounce()
-  ];
-}

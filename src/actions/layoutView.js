@@ -1,5 +1,5 @@
 import T from '../constants/ACTION_TYPES';
-import {recalcAlignedTextSets} from './textsView';
+import {recalcOffsetsDebounce} from './textsView';
 
 
 export function saveLayout(config) {
@@ -8,6 +8,6 @@ export function saveLayout(config) {
       type: T.LAYOUT_VIEW.SAVE_LAYOUT,
       config,
     },
-    recalcAlignedTextSets(),
+		recalcOffsetsDebounce(),
   ];
 }

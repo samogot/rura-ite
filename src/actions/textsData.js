@@ -1,5 +1,5 @@
 import T from '../constants/ACTION_TYPES';
-import {recalcLineMerges} from './textsView';
+import {recalcOffsetsDebounce} from './textsView';
 
 
 export function saveText(id, text) {
@@ -31,7 +31,7 @@ export function mergeNextLine() {
     {
       type: T.TEXTS_DATA.MERGE_NEXT_LINE,
     },
-    recalcLineMerges(),
+		recalcOffsetsDebounce(),
   ];
 }
 
@@ -40,7 +40,7 @@ export function unmergeNextLine() {
     {
       type: T.TEXTS_DATA.UNMERGE_NEXT_LINE,
     },
-    recalcLineMerges(),
+		recalcOffsetsDebounce(),
   ];
 }
 
@@ -49,7 +49,7 @@ export function disuniteNextLine() {
     {
       type: T.TEXTS_DATA.DISUNITE_NEXT_LINE,
     },
-    recalcLineMerges(),
+		recalcOffsetsDebounce(),
   ];
 }
 
@@ -58,7 +58,7 @@ export function unitNextLine() {
     {
       type: T.TEXTS_DATA.UNIT_NEXT_LINE,
     },
-    recalcLineMerges(),
+		recalcOffsetsDebounce(),
   ];
 }
 
@@ -67,7 +67,7 @@ export function mergeNextSrcLine() {
     {
       type: T.TEXTS_DATA.MERGE_NEXT_SRC_LINE,
     },
-    recalcLineMerges(),
+		recalcOffsetsDebounce(),
   ];
 }
 
@@ -76,7 +76,7 @@ export function unmergeNextSrcLine() {
     {
       type: T.TEXTS_DATA.UNMERGE_NEXT_SRC_LINE,
     },
-    recalcLineMerges(),
+		recalcOffsetsDebounce(),
   ];
 }
 
@@ -85,7 +85,7 @@ export function disuniteNextSrcLine() {
     {
       type: T.TEXTS_DATA.DISUNITE_NEXT_SRC_LINE,
     },
-    recalcLineMerges(),
+		recalcOffsetsDebounce(),
   ];
 }
 
@@ -94,7 +94,7 @@ export function unitNextSrcLine() {
     {
       type: T.TEXTS_DATA.UNIT_NEXT_SRC_LINE,
     },
-    recalcLineMerges(),
+		recalcOffsetsDebounce(),
   ];
 }
 

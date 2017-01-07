@@ -23,9 +23,6 @@ export default defineActionTypes({
     UPDATE_SELECTION
     UPDATE_OFFSETS
     RECALC_OFFSETS
-    RECALC_SYNCED_TEXTS
-    RECALC_ALIGNED_TEXT_SETS
-    RECALC_LINE_MERGES
   `,
 
   /*

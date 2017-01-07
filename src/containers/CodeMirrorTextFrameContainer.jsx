@@ -4,13 +4,13 @@ import * as dataActions from '../actions/textsData';
 import {connect} from 'react-redux';
 import CodeMirrorTextFrame from '../components/CodeMirrorTextFrame';
 import {
-  getMainTextId,
-  getOrigTextId,
-  getTextWiki,
-  getTextScrollTop,
-  getTextSelection,
-  getTextOffsets,
-  getTextOperationToApply
+	getMainTextId,
+	getOrigTextId,
+	getTextWiki,
+	getTextScrollTop,
+	getTextSelection,
+	getTextOffsets,
+	getTextOperationToApply
 } from '../reducers/selectors';
 
 function mapStateToProps(state, ownProps, textId) {
@@ -31,9 +31,9 @@ function mapDispatchToProps(dispatch) {
     ...bindActionCreators(dataActions, dispatch),
     onFocus: (textId, chapterId) => {
       if (chapterId) {
-        dispatch(actions.selectActiveChapterDebounce(chapterId));
+				dispatch(actions.selectActiveChapter(chapterId));
       }
-      dispatch(actions.selectActiveTextDebounce(textId));
+			dispatch(actions.selectActiveText(textId));
     },
     onPaste: (textId, _, event) => {
       const html = event.clipboardData.getData('text/html');

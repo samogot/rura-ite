@@ -93,10 +93,10 @@ export function updateLinesHeights(id, viewport, heights, fullHeight, lineCount)
   ]
 }
 
-export function updateAllHeights(id, viewport, heights, scrollInfo) {
+export function updateAllHeights(id, viewport, heights, scrollInfo, lineCount) {
   return [
     updateClientHeight(id, scrollInfo.clientHeight),
-    updateLinesHeightsOnly(id, viewport, heights, scrollInfo.height),
+    updateLinesHeightsOnly(id, viewport, heights, scrollInfo.height, lineCount),
     recalcOffsetsDebounce(),
   ]
 }

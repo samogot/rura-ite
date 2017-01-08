@@ -46,7 +46,6 @@ class CodeMirrorTextFrame extends React.Component {
     this.props.glContainer.on('open', this.refreshCM);
     this.props.glContainer.on('show', this.refreshCM);
     this.props.glContainer.on('resize', this.refreshCM);
-    this.props.glContainer.on('resize', this.onResize);
     this.props.glContainer.on('show', this.onFocus);
     this.cm.on("paste", this.onPaste);
     this.cm.on('focus', this.onFocus);
@@ -71,7 +70,6 @@ class CodeMirrorTextFrame extends React.Component {
     this.props.glContainer.off('open', this.refreshCM);
     this.props.glContainer.off('show', this.refreshCM);
     this.props.glContainer.off('resize', this.refreshCM);
-    this.props.glContainer.off('resize', this.onResize);
     this.props.glContainer.off('show', this.onFocus);
     this.cm.off("paste", this.onPaste);
     this.cm.off('focus', this.onFocus);
@@ -89,6 +87,7 @@ class CodeMirrorTextFrame extends React.Component {
     if (this.props.textId != prevProps.textId && this.cm.getValue() != this.props.text) {
       this.cmAdapter.ignoreNextChange = true;
       this.cm.setValue(this.props.text);
+      this.onResize();
     }
     if (prevProps.operationToApply != this.props.operationToApply && !this.props.operationToApply.equals(prevProps.operationToApply)) {
       this.cmAdapter.applyOperation(this.props.operationToApply);
@@ -149,7 +148,6 @@ class CodeMirrorTextFrame extends React.Component {
   }
 
   onChange(operation, invertedOperation) {
-    this.onHeightChange();
     this.props.applyOperationFromCM(operation);
     if (this.cm.lineCount() != this.props.offsets.length) {
       const offsets = [];
@@ -174,6 +172,7 @@ class CodeMirrorTextFrame extends React.Component {
       this.props.updateOffsets(offsets);
       this.props.scrollToSelectionConditionalDebounced();
     }
+    this.onHeightChange();
   }
 
   onScroll() {
@@ -219,7 +218,8 @@ class CodeMirrorTextFrame extends React.Component {
     if (!this.props.glContainer.isHidden) {
       const {viewport, heights} = this.getViewportLinesHeights();
       const scrollInfo = this.cm.getScrollInfo();
-      this.props.updateAllHeights(viewport, heights, scrollInfo);
+      this.props.updateAllHeights(viewport, heights, scrollInfo, this.cm.lineCount());
+      this.onHeightChange.cancel();
     }
   }
 

@@ -55,27 +55,28 @@ class ConfigModal extends React.Component {
           scrollAnchor = .3;
         }
     }
-    this.props.saveScrollConfig({scrollAnchor})
+    this.props.saveScrollConfig({scrollAnchor});
   }
 
   syncTextEdgesChanged() {
-    this.props.saveScrollConfig({syncTextEdges: this.refs.syncTextEdges.checked})
+    this.props.saveScrollConfig({syncTextEdges: this.refs.syncTextEdges.checked});
   }
 
   wheelBehaviourChanged() {
-    this.props.saveScrollConfig({wheelBehaviour: this.refs.wheelBehaviour.value})
+    this.props.saveScrollConfig({wheelBehaviour: this.refs.wheelBehaviour.value});
   }
 
   wheelAmountChanged() {
-    this.props.saveScrollConfig({wheelAmount: this.refs.wheelAmount.value})
+    this.props.saveScrollConfig({wheelAmount: this.refs.wheelAmount.value});
   }
 
   anchorSelectionChanged() {
-    this.props.saveScrollConfig({anchorSelection: this.refs.anchorSelection.checked})
+    this.props.saveScrollConfig({anchorSelection: this.refs.anchorSelection.checked});
   }
 
   extraBottomHeightChanged() {
-    this.props.saveScrollConfig({extraBottomHeight: this.refs.extraBottomHeight.checked})
+    this.props.saveScrollConfig({extraBottomHeight: this.refs.extraBottomHeight.checked});
+    this.props.recalcOffsetsDebounce();
   }
 
   render() {

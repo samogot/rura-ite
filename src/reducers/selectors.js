@@ -7,6 +7,7 @@ import * as rootSelectors from './index';
 import {createSelector, createSelectorCreator} from 'reselect';
 import conditionalMemoize from '../utils/conditionalMemoize';
 import SCROLL_CONFIG from '../constants/SCROLL_CONFIG';
+import isequal from 'lodash.isequal';
 
 
 export const getChapterMainTextId = (state, id) => chaptersDataSelectors.getChapterMainTextId(rootSelectors.getChaptersData(state), id);
@@ -172,6 +173,7 @@ export const getMergesLists = createSelectorCreator(conditionalMemoize, ([synced
   return false;
 })
 ([getSyncedTexts, getConfigSrcLangs, rootSelectors.getTextsData], computeMergesLists);
+
 
 export const computeLineMerges = (mergesLists) => {
   const syncedLinePosition = {}; //последняя известная позиция в которой все синхронно
@@ -370,3 +372,116 @@ export const computeLineMerges = (mergesLists) => {
   return resultMerges;
 };
 export const getLineMerges = createSelector([getMergesLists], computeLineMerges);
+
+export const computeNewTextOffsets = (filteredAlignedTextSets, lineMerges, syncedTextsList, textsView) => {
+  const resultOffsets = {};
+
+  const mergeAtLine = textsViewSelectors.mergeAtLine;
+  const getTextOffsets = (id) => textsViewSelectors.getTextOffsets(textsView, id);
+  const getTextHeights = (id) => textsViewSelectors.getTextHeights(textsView, id);
+  const getTextViewport = (id) => textsViewSelectors.getTextViewport(textsView, id);
+  const getTextScrollHeight = (id) => textsViewSelectors.getTextScrollHeight(textsView, id);
+  const getTextClientHeight = (id) => textsViewSelectors.getTextClientHeight(textsView, id);
+  const prevOffset = (id, line) => getTextOffsets(id)[line] || 0;
+  const prevLineTop = (id, line) => getTextHeights(id)[line];
+  const prevLineBottom = (id, line) => prevLineTop(id, line + 1);
+  const prevLineExists = prevLineBottom;
+  const prevLineHeightWithOffset = (id, line) => prevLineBottom(id, line) - prevLineTop(id, line);
+  const prevLineTrueHeight = (id, line) => prevLineHeightWithOffset(id, line) - prevOffset(id, line);
+  const resultOffset = (id, line) => resultOffsets[id].offsets[line];
+  const resultLineTop = (id, line) => resultOffsets[id].heights[line];
+
+
+  for (const textSet of filteredAlignedTextSets) {
+    let minViewport = Infinity, maxViewport = -Infinity;
+    let minViewportId, maxViewportId;
+    const extraOffsets = {};
+    for (let id of textSet) {
+      const minTemp = mergeAtLine(id, getTextViewport(id).from, lineMerges, syncedTextsList)[0][id].from;
+      if (minViewport > minTemp) {
+        minViewport = minTemp;
+        minViewportId = id;
+      }
+      const maxTemp = Math.min(getTextHeights(id).length - 1, mergeAtLine(id, getTextViewport(id).to, lineMerges, syncedTextsList)[0][id].to - 1);
+      if (maxViewport < maxTemp) {
+        maxViewport = maxTemp;
+        maxViewportId = id;
+      }
+    }
+    if (maxViewportId != minViewportId) {
+      minViewport = mergeAtLine(minViewportId, getTextViewport(minViewportId).from, lineMerges, syncedTextsList)[0][maxViewportId].from;
+      minViewportId = maxViewportId;
+    }
+    for (let id of textSet) {
+      resultOffsets[id] = {offsets: getTextOffsets(id).slice(), minViewport, maxViewport};
+      extraOffsets[id] = 0;
+    }
+    let line = minViewport;
+    let contFrom = 0;
+    let merge;
+    while (line < maxViewport) {
+      [merge, contFrom] = mergeAtLine(minViewportId, line, lineMerges, syncedTextsList, contFrom);
+      const mergeHeights = {};
+      for (let id of textSet) {
+        mergeHeights[id] = 0;
+      }
+      let maxMergeHeight = 0;
+      for (let id of textSet) {
+        for (let l = merge[id].from; l < merge[id].to; ++l) {
+          if (prevLineExists(id, l)) {
+            mergeHeights[id] += prevLineTrueHeight(id, l);
+          }
+        }
+        maxMergeHeight = Math.max(maxMergeHeight, mergeHeights[id]);
+      }
+      for (let id of textSet) {
+        for (let l = merge[id].from; l < merge[id].to; ++l) {
+          if (prevLineExists(id, l)) {
+            resultOffsets[id].offsets[l] = (maxMergeHeight - mergeHeights[id]) / (merge[id].to - merge[id].from);
+          }
+          else {
+            extraOffsets[id] += maxMergeHeight / (merge[id].to - merge[id].from);
+          }
+        }
+      }
+      line = merge[minViewportId].to;
+    }
+    for (let id of textSet) {
+      if (extraOffsets[id] && Math.max(prevLineTop(id, getTextHeights(id).length - 1), getTextClientHeight(id)) >= getTextScrollHeight(id) - 10) {
+        resultOffsets[id].offsets[resultOffsets[id].offsets.length - 1] += extraOffsets[id];
+      }
+    }
+  }
+  for (let id in resultOffsets) {
+    resultOffsets[id].heights = getTextHeights(id).slice();
+    let totalOffsetsDiff = 0;
+    for (let line = resultOffsets[id].minViewport; line < resultOffsets[id].maxViewport; ++line) {
+      if (resultOffset(id, line) !== undefined) {
+        //resultLineBottom
+        resultOffsets[id].heights[line + 1] = resultLineTop(id, line) + prevLineTrueHeight(id, line) + resultOffset(id, line);
+        totalOffsetsDiff += resultOffset(id, line) - prevOffset(id, line);
+      }
+    }
+    const prevHeight = getTextScrollHeight(id);
+    let newHeight = prevHeight + totalOffsetsDiff;
+    if (prevHeight == getTextClientHeight(id)) {
+      newHeight = resultOffsets[id].heights[resultOffsets[id].heights.length - 1] + resultOffsets[id].heights[0];
+    }
+    resultOffsets[id].newHeight = newHeight;
+  }
+  return resultOffsets;
+};
+export const getNewTextOffsets = createSelectorCreator(conditionalMemoize, ([filteredAlignedTextSets, lineMerges, syncedTextsList, textsView], [lastFilteredAlignedTextSets, lastLineMerges, lastSyncedTextsList, lastTextsView]) => {
+  if (filteredAlignedTextSets !== lastFilteredAlignedTextSets || lineMerges !== lastLineMerges || syncedTextsList !== lastSyncedTextsList) {
+    return true;
+  }
+  const s = textsViewSelectors;
+  for (let textSets of filteredAlignedTextSets) {
+    for (let id of textSets) {
+      if (!isequal(s.getTextHeights(textsView, id), s.getTextHeights(lastTextsView, id))) {
+        return true;
+      }
+    }
+  }
+})
+([getFilteredAlignedTextSets, getLineMerges, getSyncedTextsList, rootSelectors.getTextsView], computeNewTextOffsets);

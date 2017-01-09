@@ -1,5 +1,5 @@
 import expect from 'expect';
-import {mergeAtLine} from '../../../src/reducers/view/textsViewReducer';
+import {mergeAtLine} from '../../../app/reducers/view/textsViewReducer';
 
 describe('textsViewReducer.js', () => {
 

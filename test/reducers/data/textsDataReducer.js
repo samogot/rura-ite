@@ -1,5 +1,5 @@
 import expect from 'expect';
-import reducers from '../../../src/reducers';
+import reducers from '../../../app/reducers';
 
 
 describe('textsDataReducer', () => {

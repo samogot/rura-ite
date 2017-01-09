@@ -1,5 +1,5 @@
 import expect from 'expect';
-import {computeLineMerges, computeMergesLists} from '../../src/reducers/selectors';
+import {computeLineMerges, computeMergesLists} from '../../app/reducers/selectors';
 
 describe('selectors.js', () => {
 

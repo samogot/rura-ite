@@ -6,8 +6,7 @@ import CodeMirror from 'codemirror';
 import {pacomoDecorator} from '../utils/pacomo';
 import throttle from 'lodash.throttle';
 import debounce from 'lodash.debounce';
-global.ot = global.ot || require('ot');
-require('ot/lib/codemirror-adapter');
+import {CodeMirrorAdapter, TextOperation} from 'exports?ot!imports?ot!ot/lib/codemirror-adapter';
 
 class CodeMirrorTextFrame extends React.Component {
 
@@ -38,7 +37,7 @@ class CodeMirrorTextFrame extends React.Component {
     };
 
     this.cm = CodeMirror.fromTextArea(this.refs.textarea, options);
-    this.cmAdapter = new ot.CodeMirrorAdapter(this.cm);
+    this.cmAdapter = new CodeMirrorAdapter(this.cm);
     this.cmAdapter.registerCallbacks({
       change: this.onChange,
       selectionChange: this.onSelectionChange,
@@ -58,7 +57,7 @@ class CodeMirrorTextFrame extends React.Component {
       text: '',
       offsets: [],
       selection: {ranges: []},
-      operationToApply: new ot.TextOperation()
+      operationToApply: new TextOperation()
     });
 
     window.cm = window.cm || {};
@@ -236,7 +235,7 @@ class CodeMirrorTextFrame extends React.Component {
     text: React.PropTypes.string.isRequired,
     textId: React.PropTypes.number.isRequired,
     scrollTop: React.PropTypes.number.isRequired,
-    operationToApply: React.PropTypes.instanceOf(ot.TextOperation).isRequired,
+    operationToApply: React.PropTypes.instanceOf(TextOperation).isRequired,
     selection: React.PropTypes.shape({
       ranges: React.PropTypes.arrayOf(React.PropTypes.shape({
         line: React.PropTypes.number.isRequired,

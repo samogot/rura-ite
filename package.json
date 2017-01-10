@@ -7,18 +7,21 @@
   "license": "MIT",
   "main": "static",
   "scripts": {
-    "start": "gulp serve",
-    "open": "gulp open",
-    "gulp": "gulp",
+    "start": "NODE_ENV=development babel-node server",
+    "dist": "webpack --config webpack/webpack.config.both.babel.js",
     "test": "mocha --compilers js:babel-core/register"
   },
   "devDependencies": {
     "autoprefixer-loader": "^3.2.0",
+    "babel-cli": "^6.18.0",
     "babel-core": "^6.1.4",
     "babel-loader": "^6.1.0",
     "babel-plugin-transform-runtime": "^6.1.4",
+    "babel-preset-es2015": "^6.18.0",
     "babel-preset-latest": "^6.16.0",
     "babel-preset-react": "^6.1.4",
+    "babel-preset-react-hmre": "^1.1.1",
+    "babel-preset-react-optimize": "^1.0.1",
     "babel-preset-stage-0": "^6.1.2",
     "babel-register": "^6.1.4",
     "css-loader": "^0.23.1",
@@ -35,6 +38,8 @@
     "gulp-load-plugins": "^1.2.0",
     "gulp-size": "^2.0.0",
     "gulp-util": "^3.0.5",
+    "html-loader": "^0.4.4",
+    "html-webpack-plugin": "^2.26.0",
     "imports-loader": "^0.7.0",
     "json-loader": "^0.5.3",
     "mocha": "^3.2.0",
@@ -47,7 +52,10 @@
     "stylus-loader": "^2.4.0",
     "url-loader": "^0.5.6",
     "webpack": "^1.9.10",
-    "webpack-dev-server": "^1.9.0"
+    "webpack-dev-middleware": "^1.9.0",
+    "webpack-dev-server": "^1.9.0",
+    "webpack-hot-middleware": "^2.15.0",
+    "webpack-node-externals": "^1.5.4"
   },
   "dependencies": {
     "babel-polyfill": "^6.1.4",
@@ -72,6 +80,7 @@
     "redux-shortcuts": "0.0.3",
     "redux-thunk": "^1.0.0",
     "reselect": "^2.5.4",
+    "source-map-support": "^0.4.8",
     "translit": "0.0.1",
     "translit-russian": "0.0.2",
     "uniloc": "^0.2.0"

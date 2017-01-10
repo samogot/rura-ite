@@ -1,0 +1,46 @@
+build:
+  stage: build
+  script:
+    - npm install
+    - npm run dist
+  cache:
+    paths:
+      - node_modules/
+  artifacts:
+    paths:
+      - dist/
+    expire_in: 6 mos
+
+test:
+  stage: test
+  script:
+    - npm install
+    - npm test
+  cache:
+    paths:
+      - node_modules/
+
+.deploy: &deploy_definition
+  stage: deploy
+  script:
+    - rm -r /srv/http/$DST_DIR/ite/
+    - cp -r dist/* /srv/http/$DST_DIR/ite/
+#    - node /srv/http/$DST_DIR/ite/server
+  dependencies:
+    - build
+
+deploy_prod:
+  <<: *deploy_definition
+  variables:
+    DST_DIR: "ruranobe.ru"
+  only:
+    - master
+  environment: prod
+
+deploy_beta:
+  <<: *deploy_definition
+  variables:
+    DST_HOST: "beta.ruranobe.ru"
+  except:
+    - master
+  environment: beta
